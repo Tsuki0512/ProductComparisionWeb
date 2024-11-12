@@ -63,7 +63,7 @@
   v(60pt)
   image("logo.svg", width: 50%)
   v(20pt)
-  text(font: "Source Han Serif SC", size: san, weight: "bold")[设计报告]
+  text(font: "Source Han Serif SC", size: san, weight: "bold")[本科实验报告]
   v(50pt)
   table(
     columns: (75pt, 300pt),
