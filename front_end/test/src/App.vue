@@ -1,5 +1,6 @@
 <template>
-  <div class="content-wrapper">
+  <router-view v-if="$route.path !== '/'"></router-view>
+  <div class="content-wrapper" v-else>
     <img alt="Vue logo" src="./assets/logo.jpg" class="logo-image">
     <h1 class="site-title">商品比价网站</h1>
     <h2 class="site-subtitle">Price Comparison Website</h2>
@@ -25,16 +26,15 @@
       <button class="register-button">Register NOW!</button>
     </div>
     <UserTable v-if="showTable" :userData="userData" />
-    <div class="footer">
-      Design by Wyr, ZheJiang University
-    </div>
+  </div>
+  <div class="footer">
+    Design by Wyr, ZheJiang University
   </div>
 </template>
 
 <script>
 import HelloWorld from './components/HelloWorld.vue'
 import UserTable from './components/UserTable.vue'
-import axios from 'axios'
 
 export default {
   name: 'App',
@@ -51,23 +51,27 @@ export default {
     }
   },
   created() {
-    axios.get('http://localhost:80/user').then((response) => {
+    this.$axios.get('/user').then((response) => {
       this.userData = response.data;
     })
   },
   methods: {
     handleLogin() {
-      // 查找匹配的用户
       const user = this.userData.find(user => 
         user.username === this.username && user.password === this.password
       );
 
       if (user) {
-        // 登录成功
+        // 登录成功时设置认证状态
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('username', user.username);  // 保存用户名
+        localStorage.setItem('email', user.email);  // 保存邮箱
         alert('登录成功！');
         this.showTable = false;
+        this.$router.push('/home');
       } else {
-        // 登录失败，显示用户表格
+        // 登录失败
+        localStorage.removeItem('isAuthenticated');  // 确保移除认证状态
         alert('登录失败，显示所有用户信息');
         this.showTable = true;
       }
@@ -91,8 +95,19 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin-top: 0;  /* 移除顶部边距 */
+  margin: 0;
+  padding: 0;
   min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* 登录页面的渐变背景 */
+.content-wrapper {
+  width: 100%;  /* 确保宽度100% */
+  min-height: 100vh;  /* 确保高度100% */
+  margin: 0;  /* 移除所有外边距 */
+  padding: 60px 0 0 0;  /* 只保留顶部内边距 */
   background: linear-gradient(
     to right,
     #b1d5fa 0%,
@@ -104,19 +119,14 @@ html, body {
     #b1d5fa 95%,
     #b1d5fa 100%
   );
-  padding-top: 60px;  /* 替代之前的margin-top */
+  display: flex;  /* 使用flex布局 */
+  flex-direction: column;  /* 垂直排列 */
+  align-items: center;  /* 水平居中 */
 }
 
-.content-wrapper {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-  background: transparent;  /* 改为透明背景 */
-  min-height: calc(100vh - 60px);  /* 减去padding-top的高度 */
-}
-
+/* 登录页面的内容容器 */
 .login-container {
-  max-width: 300px;
+  width: 300px;  /* 固定宽度 */
   margin: 20px auto;
 }
 
