@@ -21,9 +21,10 @@
           <a href="#" class="forget-password">Forget Password?</a>
         </div>
       </div>
-      <button class="login-button">LOGIN</button>
+      <button class="login-button" @click="handleLogin">LOGIN</button>
       <button class="register-button">Register NOW!</button>
     </div>
+    <UserTable v-if="showTable" :userData="userData" />
     <div class="footer">
       Design by Wyr, ZheJiang University
     </div>
@@ -32,16 +33,44 @@
 
 <script>
 import HelloWorld from './components/HelloWorld.vue'
+import UserTable from './components/UserTable.vue'
+import axios from 'axios'
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    HelloWorld,
+    UserTable
   },
   data() {
     return {
       username: '',
-      password: ''
+      password: '',
+      userData: [],
+      showTable: false
+    }
+  },
+  created() {
+    axios.get('http://localhost:80/user').then((response) => {
+      this.userData = response.data;
+    })
+  },
+  methods: {
+    handleLogin() {
+      // 查找匹配的用户
+      const user = this.userData.find(user => 
+        user.username === this.username && user.password === this.password
+      );
+
+      if (user) {
+        // 登录成功
+        alert('登录成功！');
+        this.showTable = false;
+      } else {
+        // 登录失败，显示用户表格
+        alert('登录失败，显示所有用户信息');
+        this.showTable = true;
+      }
     }
   }
 }
@@ -189,7 +218,6 @@ input::placeholder {
   font-size: 25px;
   font-family: 'Baskerville', 'Libre Baskerville', 'Times New Roman', serif;
   font-style: italic;
-  font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: underline;
