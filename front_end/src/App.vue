@@ -1,9 +1,7 @@
 <template>
   <router-view v-if="$route.path !== '/'"></router-view>
   <div class="content-wrapper" v-else>
-    <img alt="Vue logo" src="./assets/logo.jpg" class="logo-image">
-    <h1 class="site-title">商品比价网站</h1>
-    <h2 class="site-subtitle">Price Comparison Website</h2>
+    <SiteHeader :showSubtitle="true" />
     <div class="login-container">
       <div class="input-group">
         <input 
@@ -19,11 +17,11 @@
           placeholder="Enter password"
         >
         <div class="forget-password-wrapper">
-          <a href="#" class="forget-password">Forget Password?</a>
+          <a class="forget-password" @click="$router.push('/reset-password')">Forget Password?</a>
         </div>
       </div>
       <button class="login-button" @click="handleLogin">LOGIN</button>
-      <button class="register-button">Register NOW!</button>
+      <button class="register-button" @click="$router.push('/register')">Register NOW!</button>
     </div>
     <UserTable v-if="showTable" :userData="userData" />
   </div>
@@ -35,12 +33,14 @@
 <script>
 import HelloWorld from './components/HelloWorld.vue'
 import UserTable from './components/UserTable.vue'
+import SiteHeader from './components/SiteHeader.vue'
 
 export default {
   name: 'App',
   components: {
     HelloWorld,
-    UserTable
+    UserTable,
+    SiteHeader
   },
   data() {
     return {
@@ -62,18 +62,30 @@ export default {
       );
 
       if (user) {
-        // 登录成功时设置认证状态
+        // 登录成功
         localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('username', user.username);  // 保存用户名
-        localStorage.setItem('email', user.email);  // 保存邮箱
-        alert('登录成功！');
-        this.showTable = false;
+        localStorage.setItem('username', user.username);
+        localStorage.setItem('email', user.email);
+        
+        // 使用 Element Plus 的消息提示
+        this.$message({
+          message: '登录成功',
+          type: 'success',
+          duration: 2000
+        });
+        
+        // 直接跳转到主页
         this.$router.push('/home');
       } else {
         // 登录失败
-        localStorage.removeItem('isAuthenticated');  // 确保移除认证状态
-        alert('登录失败，显示所有用户信息');
-        this.showTable = true;
+        localStorage.removeItem('isAuthenticated');
+        
+        // 使用 Element Plus 的消息提示
+        this.$message({
+          message: '用户名或密码错误',
+          type: 'error',
+          duration: 2000
+        });
       }
     }
   }
@@ -168,10 +180,6 @@ input {
   font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
   letter-spacing: 1.2px;
   font-style: italic;
-}
-
-input::placeholder {
-  color: #7eb3d1;
 }
 
 .forget-password-wrapper {
