@@ -50,7 +50,27 @@
 
     <!-- 商品表格 -->
     <div class="products-table" v-else>
-      <el-table :data="products" style="width: 100%" :fit="true">
+      <el-table 
+        :data="products" 
+        style="width: 100%" 
+        :fit="true"
+        :row-class-name="getRowClassName"
+      >
+        <el-table-column 
+          width="50" 
+          align="center"
+          fixed="left">
+          <template #default="scope">
+            <el-icon 
+              class="star-icon"
+              :class="{ 'is-starred': isProductStarred(scope.row) }"
+              @click.stop="handleToggleStar(scope.row)"
+            >
+              <Star v-if="isProductStarred(scope.row)" style="color: #f0c24b;" />
+              <StarFilled v-else />
+            </el-icon>
+          </template>
+        </el-table-column>
         <el-table-column 
           type="index" 
           label="序号" 
@@ -97,21 +117,26 @@
     <ProductDetail 
       v-model:visible="showProductDetail"
       :product="currentProduct"
+      :isStarred="isProductStarred(currentProduct)"
+      @toggle-star="handleToggleStar"
     />
   </div>
 </template>
 
 <script>
 import ProductDetail from '../components/ProductDetail.vue'
+import { Star, StarFilled } from '@element-plus/icons-vue'
 
 export default {
   name: 'Home',
   components: {
-    ProductDetail
+    ProductDetail,
+    Star,
+    StarFilled
   },
   data() {
     return {
-      username: localStorage.getItem('username') || '用户',
+      username: localStorage.getItem('username') || '户',
       searchQuery: '',
       products: [],
       showProductDetail: false,
@@ -208,6 +233,7 @@ export default {
         }
       ],
       selectedPlatform: 'all',
+      starredProducts: new Set(),
     }
   },
   methods: {
@@ -241,6 +267,26 @@ export default {
     },
     handleProfile() {
       this.$router.push('/profile');
+    },
+    getRowClassName({ row }) {
+      return this.isProductStarred(row) ? 'starred-row' : '';
+    },
+    isProductStarred(product) {
+      if (!product) return false;
+      const productKey = `${product.barcode}-${product.platform}`;
+      return this.starredProducts.has(productKey);
+    },
+    handleToggleStar(product) {
+      if (!product) return;
+      
+      const productKey = `${product.barcode}-${product.platform}`;
+      
+      if (this.starredProducts.has(productKey)) {
+        this.starredProducts.delete(productKey);
+      } else {
+        this.starredProducts.add(productKey);
+      }
+      this.$forceUpdate();
     }
   }
 }
@@ -309,7 +355,7 @@ export default {
 
 .welcome-text {
   color: #3f5bad;
-  font-size: 40px;
+  font-size: 35px;
   margin: 0;
   line-height: 1;
   font-family: 'Playfair Display', 'Didot', 'Bodoni MT', serif;
@@ -492,5 +538,65 @@ export default {
 :deep(.el-button--small) {
   padding: 8px 15px;
   font-size: 12px;
+}
+
+/* 修改星星图标样式 */
+:deep(.fa-star), :deep(.fa-star-o) {
+  font-size: 16px;
+  color: #999;
+  transition: all 0.3s;
+  padding: 5px;
+}
+
+:deep(.fa-star:hover), :deep(.fa-star-o:hover) {
+  color: #f0c24b;
+  transform: scale(1.1);
+}
+
+:deep(.fa-star.starred) {
+  color: #f0c24b;
+}
+
+/* 收藏行样式 */
+:deep(.starred-row) {
+  background-color: #fff9e6 !important;
+}
+
+:deep(.starred-row:hover > td) {
+  background-color: #fff3d6 !important;
+}
+
+.star-icon {
+  cursor: pointer;
+  font-size: 20px;
+  transition: all 0.3s;
+}
+
+.star-icon:hover {
+  transform: scale(1.2);
+}
+
+:deep(.el-table .starred-row) {
+  background-color: #fff9e6;
+}
+
+:deep(.el-table .starred-row:hover > td) {
+  background-color: #fff3d6 !important;
+}
+
+:deep(.el-table .el-table__row:not(.starred-row)) {
+  background-color: white;
+}
+
+:deep(.el-table .el-table__row:not(.starred-row):hover > td) {
+  background-color: #f5f7fa !important;
+}
+
+:deep(.el-icon) {
+  color: #999;
+}
+
+:deep(.is-starred .el-icon) {
+  color: #f0c24b;
 }
 </style> 

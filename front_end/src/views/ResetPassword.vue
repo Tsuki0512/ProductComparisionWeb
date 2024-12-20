@@ -82,7 +82,7 @@ export default {
     }
   },
   methods: {
-    handleReset() {
+    async handleReset() {
       if (!this.username || !this.email || !this.newPassword || !this.confirmPassword) {
         this.$message.warning('Please fill in all fields');
         return;
@@ -93,15 +93,54 @@ export default {
         return;
       }
 
+      // 验证密码长度
+      if (this.newPassword.length < 6) {
+        this.$message.error('Password must be at least 6 characters long');
+        return;
+      }
+
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(this.email)) {
         this.$message.error('Please enter a valid email address');
         return;
       }
 
-      // 这里添加重置密码的API调用
-      this.$message.success('Password reset successful!');
-      this.$router.push('/');
+      try {
+        // 先验证用户名和邮箱是否匹配
+        const response = await this.$axios.post('/user/reset-password', {
+          email: this.email,
+          username: this.username,
+          newPassword: this.newPassword
+        });
+
+        if (response.data.code === 200) {
+          this.$message.success('Password reset successful!');
+          // 清空表单
+          this.newPassword = '';
+          this.confirmPassword = '';
+          // 如果不是从个人中心来的，清空用户名和邮箱
+          if (this.$route.query.from !== '/profile') {
+            this.username = '';
+            this.email = '';
+          }
+          // 如果是从个人中心来的，返回个人中心，否则返回登录页
+          this.$router.push(this.returnPath);
+        } else {
+          // 显示具体的错误信息
+          this.$message.error(response.data.msg);
+          // 如果是用户名或邮箱不正确，清空密码输入
+          if (response.data.msg === '用户名或邮箱不正确') {
+            this.newPassword = '';
+            this.confirmPassword = '';
+          }
+        }
+      } catch (error) {
+        console.error('Reset password error:', error);
+        this.$message.error(error.response?.data?.msg || 'Password reset failed');
+        // 发生错误时清空密码输入
+        this.newPassword = '';
+        this.confirmPassword = '';
+      }
     }
   }
 }

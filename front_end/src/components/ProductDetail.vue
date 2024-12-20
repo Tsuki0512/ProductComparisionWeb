@@ -3,7 +3,15 @@
     <div class="product-detail-box">
       <div class="detail-header">
         <h3>商品详情</h3>
-        <i class="fas fa-times close-button" @click="handleClose"></i>
+        <div class="header-actions">
+          <i 
+            class="fas" 
+            :class="isStarred ? 'fa-star starred' : 'fa-star-o'" 
+            @click="toggleStar"
+            title="收藏商品"
+          ></i>
+          <i class="fas fa-times close-button" @click="handleClose"></i>
+        </div>
       </div>
       <div class="detail-content">
         <div class="product-image">
@@ -89,6 +97,10 @@ export default {
           seller: ''
         }
       })
+    },
+    isStarred: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -245,6 +257,9 @@ export default {
       }
       
       this.chart.setOption(option)
+    },
+    toggleStar() {
+      this.$emit('toggle-star', this.product);
     }
   },
   beforeUnmount() {
@@ -385,5 +400,27 @@ export default {
 
 :deep(.el-select) {
   width: 200px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.fa-star, .fa-star-o {
+  cursor: pointer;
+  font-size: 18px;
+  color: #999;
+  transition: all 0.3s;
+}
+
+.fa-star:hover, .fa-star-o:hover {
+  color: #f0c24b;
+  transform: scale(1.1);
+}
+
+.starred {
+  color: #f0c24b !important;
 }
 </style> 

@@ -3,20 +3,27 @@
     <div class="content-wrapper">
       <img alt="Vue logo" src="../assets/logo.jpg" class="logo-image">
       <h1 class="site-title">商品比价网站</h1>
-      <div class="login-container">
-        <input 
-          type="text" 
-          v-model="username" 
-          placeholder="用户名"
-          class="login-input"
-        >
-        <input 
-          type="password" 
-          v-model="password" 
-          placeholder="密码"
-          class="login-input"
-        >
+      
+      <!-- 登录表单 -->
+      <div v-if="!showRegister" class="login-container">
+        <input type="text" v-model="username" placeholder="用户名" class="login-input">
+        <input type="password" v-model="password" placeholder="密码" class="login-input">
         <button @click="handleLogin" class="login-button">登录</button>
+        <div class="register-link">
+          <a @click="showRegister = true">没有账号？立即注册</a>
+        </div>
+      </div>
+
+      <!-- 注册表单 -->
+      <div v-else class="login-container">
+        <input type="email" v-model="registerForm.email" placeholder="邮箱" class="login-input">
+        <input type="text" v-model="registerForm.username" placeholder="用户名" class="login-input">
+        <input type="password" v-model="registerForm.password" placeholder="密码" class="login-input">
+        <input type="password" v-model="registerForm.confirmPassword" placeholder="确认密码" class="login-input">
+        <button @click="handleRegister" class="login-button">注册</button>
+        <div class="login-link">
+          <a @click="showRegister = false">已有账号？返回登录</a>
+        </div>
       </div>
     </div>
   </div>
@@ -28,7 +35,14 @@ export default {
   data() {
     return {
       username: '',
-      password: ''
+      password: '',
+      showRegister: false,
+      registerForm: {
+        email: '',
+        username: '',
+        password: '',
+        confirmPassword: ''
+      }
     }
   },
   methods: {
@@ -55,6 +69,37 @@ export default {
           alert('登录失败，请检查用户名和密码');
         });
         */
+      }
+    },
+    async handleRegister() {
+      // 验证密码是否一致
+      if (this.registerForm.password !== this.registerForm.confirmPassword) {
+        alert('两次输入的密码不一致');
+        return;
+      }
+      
+      try {
+        const response = await axios.post('/user/register', {
+          email: this.registerForm.email,
+          username: this.registerForm.username,
+          password: this.registerForm.password
+        });
+        
+        if (response.data.code === 200) {
+          alert('注册成功！请登录');
+          this.showRegister = false; // 返回登录界面
+          // 清空注册表单
+          this.registerForm = {
+            email: '',
+            username: '',
+            password: '',
+            confirmPassword: ''
+          };
+        } else {
+          alert(response.data.msg || '注册失败');
+        }
+      } catch (error) {
+        alert('注册失败：' + error.message);
       }
     }
   }
@@ -123,5 +168,15 @@ export default {
 
 .login-button:hover {
   background-color: #6b95be;
+}
+
+.register-link, .login-link {
+  text-align: center;
+  margin-top: 10px;
+}
+
+a {
+  color: #4CAF50;
+  cursor: pointer;
 }
 </style> 

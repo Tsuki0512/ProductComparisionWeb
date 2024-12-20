@@ -74,8 +74,8 @@ export default {
     }
   },
   methods: {
-    handleRegister() {
-      // 这里添加注册逻辑
+    async handleRegister() {
+      // 表单验证
       if (!this.email || !this.username || !this.password || !this.confirmPassword) {
         this.$message.warning('Please fill in all fields');
         return;
@@ -86,16 +86,30 @@ export default {
         return;
       }
 
-      // 简单的邮箱格式验证
+      // 邮箱格式验证
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(this.email)) {
         this.$message.error('Please enter a valid email address');
         return;
       }
 
-      // 这里可以添加API调用来注册用户
-      this.$message.success('Registration successful!');
-      this.$router.push('/');
+      try {
+        const response = await this.$axios.post('/user/register', {
+          email: this.email,
+          username: this.username,
+          password: this.password
+        });
+        
+        if (response.data.code === 200) {
+          this.$message.success('Registration successful!');
+          this.$router.push('/');
+        } else {
+          this.$message.error(response.data.msg || 'Registration failed');
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        this.$message.error(error.response?.data?.msg || 'Registration failed');
+      }
     }
   }
 }

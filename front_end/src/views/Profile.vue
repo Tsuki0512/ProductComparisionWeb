@@ -204,8 +204,33 @@ export default {
       this.$router.push('/');
     },
     handleDelete() {
-      // 这里添加注销账号的逻辑
-      alert('确定要注销账号吗？');
+      this.$confirm('确定要注销账号吗？此操作不可恢复！', '警告', {
+        confirmButtonText: '确定注销',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async () => {
+        try {
+          const email = localStorage.getItem('email');
+          const response = await this.$axios.delete(`/user/delete?email=${email}`);
+          
+          if (response.data.code === 200) {
+            this.$message.success('账号已注销');
+            // 清除本地存储
+            localStorage.removeItem('isAuthenticated');
+            localStorage.removeItem('username');
+            localStorage.removeItem('email');
+            // 跳转到登录页
+            this.$router.push('/');
+          } else {
+            this.$message.error(response.data.msg || '注销失败');
+          }
+        } catch (error) {
+          console.error('Delete account error:', error);
+          this.$message.error(error.response?.data?.msg || '注销失败');
+        }
+      }).catch(() => {
+        this.$message.info('已取消注销操作');
+      });
     },
     handleBack() {
       this.$router.push('/home');
@@ -236,49 +261,61 @@ export default {
       this.originalEmail = this.email;
       this.editingEmail = true;
     },
-    saveUsername() {
-      if (this.editUsername.trim()) {
-        this.$confirm('确定要修改用户名吗？', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          // 这里可以添加后端API调用来验证用户名是否可用
+    async saveUsername() {
+      if (!this.editUsername.trim()) {
+        this.$message.warning('用户名不能为空！');
+        return;
+      }
+
+      try {
+        const response = await this.$axios.put('/user/update-username', {
+          email: this.email,
+          newUsername: this.editUsername
+        });
+
+        if (response.data.code === 200) {
           this.username = this.editUsername;
           localStorage.setItem('username', this.editUsername);
           this.editingUsername = false;
           this.$message.success('用户名修改成功！');
-        }).catch(() => {
-          this.$message.info('已取消修改');
-        });
-      } else {
-        this.$message.warning('用户名不能为空！');
+        } else {
+          this.$message.error(response.data.msg);
+        }
+      } catch (error) {
+        console.error('Update username error:', error);
+        this.$message.error(error.response?.data?.msg || '用户名修改失败');
       }
     },
-    saveEmail() {
-      if (this.editEmail.trim()) {
-        // 简单的邮箱格式验证
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(this.editEmail)) {
-          this.$message.error('请输入有效的邮箱地址！');
-          return;
-        }
+    async saveEmail() {
+      if (!this.editEmail.trim()) {
+        this.$message.warning('邮箱不能为空！');
+        return;
+      }
 
-        this.$confirm('确定要修改邮箱吗？', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          // 这里可以添加后端API调用来验证邮箱是否可用
+      // 邮箱格式验证
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(this.editEmail)) {
+        this.$message.error('请输入有效的邮箱地址！');
+        return;
+      }
+
+      try {
+        const response = await this.$axios.put('/user/update-email', {
+          oldEmail: this.email,
+          newEmail: this.editEmail
+        });
+
+        if (response.data.code === 200) {
           this.email = this.editEmail;
           localStorage.setItem('email', this.editEmail);
           this.editingEmail = false;
           this.$message.success('邮箱修改成功！');
-        }).catch(() => {
-          this.$message.info('已取消修改');
-        });
-      } else {
-        this.$message.warning('邮箱不能为空！');
+        } else {
+          this.$message.error(response.data.msg);
+        }
+      } catch (error) {
+        console.error('Update email error:', error);
+        this.$message.error(error.response?.data?.msg || '邮箱修改失败');
       }
     },
     cancelEditUsername() {
@@ -455,7 +492,7 @@ export default {
   margin: 15px 30px;
 }
 
-/* 内���区域样式 */
+/* 内区域样式 */
 .profile-content {
   max-width: 1000px;
   margin: 0 auto;
