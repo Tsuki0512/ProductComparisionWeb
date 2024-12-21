@@ -237,28 +237,54 @@ export default {
     }
   },
   methods: {
-    handleSearch() {
-      if (this.searchQuery.trim()) {
-        let filteredProducts = [...this.sampleProducts];
-        
-        if (this.selectedPlatform !== 'all') {
-          filteredProducts = filteredProducts.filter(product => {
-            switch (this.selectedPlatform) {
-              case 'jd':
-                return product.platform === '京东自营';
-              case 'tmall':
-                return product.platform === '天猫旗舰店';
-              case 'suning':
-                return product.platform === '苏宁易购';
-              default:
-                return true;
-            }
-          });
+    async handleSearch() {
+      if (!this.searchQuery.trim()) {
+        this.$message.warning('请输入搜索关键词');
+        return;
+      }
+
+      try {
+        const response = await this.$axios.get('/product/search', {
+          params: {
+            keyword: this.searchQuery
+          }
+        });
+
+        if (response.data.code === 200) {
+          // 处理返回的商品数据
+          this.products = response.data.data.map(item => ({
+            name: item.productname,
+            price: `¥${item.current_price}`,
+            platform: item.platform,
+            barcode: item.barcode,
+            image: item.image_url,
+            spec: item.specification,
+            link: '#', // 这里可以添加商品链接
+            variants: [
+              { 
+                id: 1, 
+                name: item.specification, 
+                price: item.current_price.toString() 
+              }
+            ],
+            priceHistory: [
+              {
+                date: new Date().toISOString().split('T')[0],
+                price: item.current_price,
+                variant: item.specification
+              }
+            ]
+          }));
+
+          if (this.products.length === 0) {
+            this.$message.info('未找到相关商品');
+          }
+        } else {
+          this.$message.error(response.data.msg || '搜索失败');
         }
-        
-        this.products = filteredProducts;
-      } else {
-        this.products = [];
+      } catch (error) {
+        console.error('Search error:', error);
+        this.$message.error('搜索失败：' + (error.response?.data?.msg || error.message));
       }
     },
     handleDetail(row) {
