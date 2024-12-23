@@ -24,40 +24,26 @@
           </div>
           <div class="detail-item">
             <span class="label">平台：</span>
-            <span class="value">
-              {{ product.platform }}
-              <a :href="product.link" target="_blank" class="buy-link">
-                <i class="fas fa-external-link-alt"></i> 购买链接
-              </a>
-            </span>
+            <span class="value">{{ product.platform }}</span>
           </div>
           <div class="detail-item">
             <span class="label">条码：</span>
             <span class="value">{{ product.barcode }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">规格：</span>
-            <span class="value">{{ product.spec }}</span>
+            <span class="label">链接：</span>
+            <span class="value">
+              <a :href="product.link" target="_blank" class="detail-link">
+                <i class="fas fa-external-link-alt"></i> 查看详情
+              </a>
+            </span>
           </div>
-          <div class="detail-item">
-            <span class="label">品类：</span>
-            <div class="value">
-              <el-select v-model="selectedVariant" placeholder="请选择品类">
-                <el-option
-                  v-for="item in product.variants"
-                  :key="item.id"
-                  :label="item.name"
-                  :value="item.id"
-                >
-                  <span>{{ item.name }}</span>
-                  <span class="variant-price">¥{{ item.price }}</span>
-                </el-option>
-              </el-select>
-            </div>
+          <div class="link-tip">
+            <p>商品的多级品类和规格请点击上方链接查看详情</p>
           </div>
           <div class="detail-item">
             <span class="label">当前价格：</span>
-            <span class="value price">¥{{ currentPrice }}</span>
+            <span class="value price">{{ product.price }}</span>
           </div>
         </div>
       </div>
@@ -75,196 +61,130 @@ import * as echarts from 'echarts'
 export default {
   name: 'ProductDetail',
   props: {
-    visible: {
-      type: Boolean,
-      default: false
-    },
-    product: {
-      type: Object,
-      default: () => ({
-        name: '',
-        platform: '',
-        link: '',
-        barcode: '',
-        image: '',
-        spec: '',
-        variants: [],
-        priceHistory: [],
-        detail: {
-          color: '',
-          storage: '',
-          delivery: '',
-          seller: ''
-        }
-      })
-    },
-    isStarred: {
-      type: Boolean,
-      default: false
-    }
+    visible: Boolean,
+    product: Object,
+    isStarred: Boolean
   },
   data() {
     return {
-      selectedVariant: null,
       chart: null
     }
   },
   computed: {
-    currentPrice() {
-      if (!this.selectedVariant) return '---'
-      const variant = this.product.variants.find(v => v.id === this.selectedVariant)
-      return variant ? variant.price : '---'
+    dialogVisible: {
+      get() {
+        return this.visible
+      },
+      set(value) {
+        this.$emit('update:visible', value)
+      }
     }
   },
   watch: {
-    visible: {
-      handler(newVal) {
-        if (newVal && this.product?.variants?.length) {
-          this.selectedVariant = this.product.variants[0].id
-          this.$nextTick(() => {
-            setTimeout(() => {
-              this.initChart()
-            }, 100)
-          })
-        }
-      },
-      immediate: true
-    },
-    selectedVariant: {
-      handler() {
+    visible(newVal) {
+      if (newVal) {
         this.$nextTick(() => {
           this.initChart()
         })
       }
+    },
+    'product.priceHistory': {
+      handler() {
+        this.$nextTick(() => {
+          if (this.visible) {
+            this.updateChart()
+          }
+        })
+      },
+      deep: true
     }
   },
   methods: {
     handleClose() {
-      this.$emit('update:visible', false)
+      this.dialogVisible = false
+    },
+    toggleStar() {
+      this.$emit('toggle-star', this.product)
     },
     initChart() {
       if (this.chart) {
         this.chart.dispose()
       }
-      
-      const chartDom = this.$refs.chartContainer
-      if (!chartDom) return
-      
-      this.chart = echarts.init(chartDom)
-      
-      const selectedVariantName = this.product.variants.find(v => v.id === this.selectedVariant)?.name
-      const priceHistory = this.product?.priceHistory?.filter(item => 
-        item.variant === selectedVariantName
-      ) || []
-      
+      this.chart = echarts.init(this.$refs.chartContainer)
+      this.updateChart()
+    },
+    updateChart() {
+      if (!this.chart || !this.product?.priceHistory?.length) return
+
+      const dates = this.product.priceHistory.map(item => item.date)
+      const prices = this.product.priceHistory.map(item => item.price)
+
       const option = {
         tooltip: {
-          trigger: 'item',
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          borderColor: '#3f5bad',
-          borderWidth: 1,
-          textStyle: {
-            color: '#666'
-          },
+          trigger: 'axis',
           formatter: function(params) {
-            return `<div style="padding: 3px;">
-              <div style="margin-bottom: 3px;font-weight:bold;color:#3f5bad">${params.name}</div>
-              <div style="color:#f56c6c">价格：¥${params.value.toLocaleString()}</div>
-            </div>`
-          },
-          position: 'top'
+            const data = params[0]
+            return `日期：${data.name}<br/>价格：¥${data.value}`
+          }
         },
         grid: {
-          left: '10%',
-          right: '10%',
-          bottom: '15%',
-          containLabel: true
+          top: 30,
+          bottom: 60,
+          left: 60,
+          right: 30
         },
         xAxis: {
           type: 'category',
-          data: priceHistory.map(item => item.date || ''),
+          data: dates,
           axisLabel: {
-            interval: 0,
             rotate: 45
-          },
-          axisLine: {
-            lineStyle: {
-              color: '#3f5bad'
-            }
           }
         },
         yAxis: {
           type: 'value',
-          name: '价格',
           axisLabel: {
             formatter: '¥{value}'
-          },
-          splitLine: {
-            show: true,
-            lineStyle: {
-              type: 'dashed',
-              color: '#eee'
-            }
-          },
-          axisLine: {
-            lineStyle: {
-              color: '#3f5bad'
-            }
           }
         },
         series: [{
-          data: priceHistory.map(item => item.price || 0),
+          data: prices,
           type: 'line',
           smooth: true,
-          lineStyle: {
-            color: '#3f5bad',
-            width: 2
-          },
-          symbol: 'circle',
           symbolSize: 8,
+          symbol: 'circle',
+          lineStyle: {
+            color: '#3f5bad'
+          },
           itemStyle: {
-            color: '#3f5bad',
-            borderWidth: 2,
-            borderColor: '#fff'
+            color: '#3f5bad'
           },
           emphasis: {
-            scale: true,
             itemStyle: {
-              color: '#ff6b6b',
-              borderColor: '#fff',
               borderWidth: 2,
-              shadowColor: 'rgba(0, 0, 0, 0.3)',
-              shadowBlur: 10
-            }
-          },
-          areaStyle: {
-            color: {
-              type: 'linear',
-              x: 0,
-              y: 0,
-              x2: 0,
-              y2: 1,
-              colorStops: [{
-                offset: 0,
-                color: 'rgba(63,91,173,0.3)'
-              }, {
-                offset: 1,
-                color: 'rgba(63,91,173,0.1)'
-              }]
+              borderColor: '#3f5bad',
+              color: '#fff'
+            },
+            label: {
+              show: true,
+              formatter: function(params) {
+                return `¥${params.value}`
+              },
+              backgroundColor: '#3f5bad',
+              color: '#fff',
+              padding: [4, 8],
+              borderRadius: 4
             }
           }
         }]
       }
-      
+
       this.chart.setOption(option)
-    },
-    toggleStar() {
-      this.$emit('toggle-star', this.product);
     }
   },
   beforeUnmount() {
     if (this.chart) {
       this.chart.dispose()
+      this.chart = null
     }
   }
 }
@@ -327,8 +247,8 @@ export default {
 }
 
 .product-image {
-  width: 200px;
-  height: 200px;
+  width: 250px;
+  height: 250px;
   border: 1px solid #eee;
   border-radius: 4px;
   overflow: hidden;
@@ -385,7 +305,7 @@ export default {
 
 .price-history {
   border-top: 1px solid #eee;
-  padding-top: 20px;
+  padding-top: 10px;
 }
 
 .price-history h4 {
@@ -422,5 +342,24 @@ export default {
 
 .starred {
   color: #f0c24b !important;
+}
+
+.link-tip {
+  margin: 10px 0;
+  padding: 2px 2px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  color: #666;
+  font-size: 14px;
+}
+
+.detail-link {
+  color: #3f5bad;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+.detail-link:hover {
+  text-decoration: underline;
 }
 </style> 

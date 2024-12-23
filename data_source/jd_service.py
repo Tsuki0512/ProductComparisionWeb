@@ -140,6 +140,7 @@ def parse_jd_search_html(html: str) -> dict:
                     'current_price': float(price),
                     'image_url': image_url,
                     'specification': shop_name,
+                    'link': link,
                     'historical_prices': json.dumps({
                         'current': price,
                         'original': price

@@ -68,6 +68,8 @@ export default {
         localStorage.setItem('email', user.email);
         localStorage.setItem('jdCookie', user.jd_cookie);
         localStorage.setItem('tbCookie', user.tb_cookie);
+        localStorage.setItem('uid', user.uid);
+        console.log('Current uid:', user.uid);
 
         // 使用 Element Plus 的消息提示
         this.$message({

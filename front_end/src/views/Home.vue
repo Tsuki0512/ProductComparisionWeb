@@ -34,8 +34,7 @@
       >
         <el-option label="全部平台" value="all" />
         <el-option label="京东" value="jd" />
-        <el-option label="天猫" value="tmall" />
-        <el-option label="苏宁" value="suning" />
+        <el-option label="淘宝" value="tb" />
       </el-select>
       <button @click="handleSearch" class="search-button">
         <i class="fas fa-search"></i>
@@ -138,105 +137,28 @@ export default {
     return {
       username: localStorage.getItem('username') || '户',
       searchQuery: '',
-      jdCookie: '',
-      tbCookie: '',
       products: [],
       showProductDetail: false,
       currentProduct: null,
-      sampleProducts: [
-        {
-          name: 'iPhone 15 Pro',
-          price: '¥7999',
-          platform: '京东自营',
-          link: 'https://item.jd.com/example',
-          barcode: '6925896542154',
-          image: 'https://img14.360buyimg.com/n0/jfs/t1/236328/4/10993/40829/657c3e3fF3eb6dc42/a55f0d54d2f3726b.jpg',
-          spec: '256GB',
-          variants: [
-            { id: 1, name: '自然钛色 256GB', price: '7999' },
-            { id: 2, name: '自然钛色 512GB', price: '9299' },
-            { id: 3, name: '蓝钛色 256GB', price: '7999' },
-            { id: 4, name: '蓝钛色 512GB', price: '9299' }
-          ],
-          priceHistory: [
-            { date: '2023-09', price: 8999, variant: '自然钛色 256GB' },
-            { date: '2023-10', price: 8599, variant: '自然钛色 256GB' },
-            { date: '2023-11', price: 8299, variant: '自然钛色 256GB' },
-            { date: '2023-12', price: 7999, variant: '自然钛色 256GB' },
-            { date: '2024-01', price: 7899, variant: '自然钛色 256GB' },
-            { date: '2023-09', price: 9999, variant: '自然钛色 512GB' },
-            { date: '2023-10', price: 9599, variant: '自然钛色 512GB' },
-            { date: '2023-11', price: 9399, variant: '自然钛色 512GB' },
-            { date: '2023-12', price: 9299, variant: '自然钛色 512GB' },
-            { date: '2024-01', price: 9299, variant: '自然钛色 512GB' }
-          ],
-          detail: {
-            color: '自然钛色',
-            storage: '256GB',
-            delivery: '次日达',
-            seller: '京东自营'
-          }
-        },
-        {
-          name: 'iPhone 15 Pro',
-          price: '¥8099',
-          platform: '天猫旗舰店',
-          link: 'https://detail.tmall.com/example',
-          barcode: '6925896542154',
-          image: 'https://img14.360buyimg.com/n0/jfs/t1/236328/4/10993/40829/657c3e3fF3eb6dc42/a55f0d54d2f3726b.jpg',
-          spec: '256GB',
-          variants: [
-            { id: 1, name: '自然钛色 256GB', price: '8099' },
-            { id: 2, name: '自然钛色 512GB', price: '9399' },
-            { id: 3, name: '蓝钛色 256GB', price: '8099' },
-            { id: 4, name: '蓝钛色 512GB', price: '9399' }
-          ],
-          priceHistory: [
-            { date: '2023-09', price: 9099 },
-            { date: '2023-10', price: 8799 },
-            { date: '2023-11', price: 8399 },
-            { date: '2023-12', price: 8199 },
-            { date: '2024-01', price: 8099 }
-          ],
-          detail: {
-            color: '自然钛色',
-            storage: '256GB',
-            delivery: '3日内发货',
-            seller: 'Apple官方旗舰店'
-          }
-        },
-        {
-          name: 'iPhone 15 Pro',
-          price: '¥7899',
-          platform: '苏宁易购',
-          link: 'https://product.suning.com/example',
-          barcode: '6925896542154',
-          image: 'https://img14.360buyimg.com/n0/jfs/t1/236328/4/10993/40829/657c3e3fF3eb6dc42/a55f0d54d2f3726b.jpg',
-          spec: '256GB',
-          variants: [
-            { id: 1, name: '自然钛色 256GB', price: '7899' },
-            { id: 2, name: '自然钛色 512GB', price: '9199' },
-            { id: 3, name: '蓝钛色 256GB', price: '7899' },
-            { id: 4, name: '蓝钛色 512GB', price: '9199' }
-          ],
-          priceHistory: [
-            { date: '2023-09', price: 8899 },
-            { date: '2023-10', price: 8499 },
-            { date: '2023-11', price: 8199 },
-            { date: '2023-12', price: 7999 },
-            { date: '2024-01', price: 7899 }
-          ],
-          detail: {
-            color: '自然钛色',
-            storage: '256GB',
-            delivery: '隔日达',
-            seller: '苏宁自营'
-          }
-        }
-      ],
       selectedPlatform: 'all',
       starredProducts: new Set(),
+      uid: localStorage.getItem('uid')
     }
+  },
+  created() {
+    if (!this.uid) {
+      console.error('用户未登录或 uid 未保存');
+      return;
+    }
+    console.log('Current uid:', this.uid);
+    this.loadStarredProducts();
+  },
+  mounted() {
+    if (!this.isLoggedIn) {
+      console.log('User not logged in');
+      return;
+    }
+    console.log('User logged in with uid:', this.uid);
   },
   methods: {
     async handleSearch() {
@@ -247,31 +169,29 @@ export default {
 
       try {
         console.log('开始搜索:', this.searchQuery);
+        
+        const params = {
+          keyword: this.searchQuery
+        };
 
-        // 从 localStorage 获取 cookie
-        if (this.selectedPlatform === 'jd') {
+        if (this.selectedPlatform === 'all' || this.selectedPlatform === 'jd') {
           const jdCookie = localStorage.getItem('jdCookie');
           console.log('jdCookie:', jdCookie);
           if (!jdCookie) {
             this.$message.error('请在个人主页设置京东 Cookie');
             return;
           }
-          this.jdCookie = jdCookie;
-        } else if (this.selectedPlatform === 'tmall') {
+          params.jdCookie = jdCookie;
+        }
+        if (this.selectedPlatform === 'all' || this.selectedPlatform === 'tb') {
           const tbCookie = localStorage.getItem('tbCookie');
           console.log('tbCookie:', tbCookie);
           if (!tbCookie) {
             this.$message.error('请在个人主页设置淘宝 Cookie');
             return;
           }
-          this.tbCookie = tbCookie;
+          params.tbCookie = tbCookie;
         }
-
-        const params = {
-          keyword: this.searchQuery,
-          jdCookie: this.jdCookie,
-          tbCookie: this.tbCookie
-        };
 
         console.log('发送请求参数:', params);
         
@@ -293,7 +213,8 @@ export default {
             barcode: item.barcode,
             image: item.image_url,
             spec: item.specification || '',
-            link: '#',
+            link: item.specification,
+            pid: item.pid,
             variants: [
               { 
                 id: 1, 
@@ -313,7 +234,7 @@ export default {
           if (this.products.length === 0) {
             this.$message.info('未找到相关商品');
           } else {
-            console.log('处理后的商品数据:', this.products);
+            console.log('处理后商品数据:', this.products);
             this.$message.success(`找到 ${this.products.length} 个商品`);
           }
         } else {
@@ -339,17 +260,56 @@ export default {
       const productKey = `${product.barcode}-${product.platform}`;
       return this.starredProducts.has(productKey);
     },
-    handleToggleStar(product) {
-      if (!product) return;
-      
-      const productKey = `${product.barcode}-${product.platform}`;
-      
-      if (this.starredProducts.has(productKey)) {
-        this.starredProducts.delete(productKey);
-      } else {
-        this.starredProducts.add(productKey);
+    async handleToggleStar(product) {
+      if (!this.uid) {
+        this.$message.warning('请先登录');
+        this.$router.push('/login');
+        return;
       }
-      this.$forceUpdate();
+      try {
+        const isStarred = this.isProductStarred(product);
+        console.log('Toggling star for product:', product.pid, 'User:', this.uid);
+        const response = await this.$axios.post('/tracking/toggle', {
+          uid: parseInt(this.uid),
+          pid: parseInt(product.pid),
+          track: !isStarred
+        });
+        if (response.data.code === 200) {
+          if (!isStarred) {
+            this.starredProducts.add(`${product.barcode}-${product.platform}`);
+          } else {
+            this.starredProducts.delete(`${product.barcode}-${product.platform}`);
+          }
+          this.$forceUpdate();
+        }
+      } catch (error) {
+        console.error('操作失败:', error);
+        this.$message.error('操作失败：' + (error.response?.data?.msg || error.message));
+      }
+    },
+    async loadStarredProducts() {
+      try {
+        const response = await this.$axios.get('/tracking/list', {
+          params: { uid: this.uid }
+        });
+        if (response.data.code === 200) {
+          this.starredProducts = new Set(response.data.data);
+        }
+      } catch (error) {
+        console.error('加载收藏商品失败:', error);
+      }
+    },
+  },
+  computed: {
+    isLoggedIn() {
+      return !!this.uid;
+    }
+  },
+  watch: {
+    isLoggedIn(newVal) {
+      if (newVal) {
+        this.loadStarredProducts();
+      }
     }
   }
 }

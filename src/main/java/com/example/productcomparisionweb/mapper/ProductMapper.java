@@ -8,8 +8,8 @@ import org.springframework.stereotype.Repository;
 @Mapper
 @Repository
 public interface ProductMapper {
-    @Insert("INSERT INTO product(productname, platform, current_price, category, specification, barcode, image_url, historical_prices) " +
-            "VALUES(#{productname}, #{platform}, #{current_price}, #{category}, #{specification}, #{barcode}, #{image_url}, #{historical_prices})")
+    @Insert("INSERT INTO product(productname, platform, current_price, image_url, barcode, historical_prices, specification) " +
+            "VALUES(#{productname}, #{platform}, #{current_price}, #{image_url}, #{barcode}, #{historical_prices}, #{specification})")
     @Options(useGeneratedKeys = true, keyProperty = "pid")
     int insertProduct(product product);
 }
