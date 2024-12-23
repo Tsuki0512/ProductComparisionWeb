@@ -86,6 +86,66 @@
             </template>
           </div>
         </div>
+        <div class="info-row">
+          <span class="info-label">
+            京东 Cookie：
+            <template v-if="!editingJDCookie">
+              {{ jdCookie || '未设置' }}
+            </template>
+            <input 
+              v-else
+              v-model="editJDCookie" 
+              class="edit-input cookie-input"
+              type="text"
+            >
+          </span>
+          <div class="button-group-small">
+            <template v-if="!editingJDCookie">
+              <button class="update-button" @click="startEditJDCookie">update</button>
+            </template>
+            <template v-else>
+              <button 
+                class="save-button"
+                :class="{ 'save-button-disabled': !isJDCookieChanged }"
+                @click="saveJDCookie"
+                :disabled="!isJDCookieChanged"
+              >
+                save
+              </button>
+              <button class="cancel-button" @click="cancelEditJDCookie">取消</button>
+            </template>
+          </div>
+        </div>
+        <div class="info-row">
+          <span class="info-label">
+            淘宝 Cookie：
+            <template v-if="!editingTBCookie">
+              {{ tbCookie || '未设置' }}
+            </template>
+            <input 
+              v-else
+              v-model="editTBCookie" 
+              class="edit-input cookie-input"
+              type="text"
+            >
+          </span>
+          <div class="button-group-small">
+            <template v-if="!editingTBCookie">
+              <button class="update-button" @click="startEditTBCookie">update</button>
+            </template>
+            <template v-else>
+              <button 
+                class="save-button"
+                :class="{ 'save-button-disabled': !isTBCookieChanged }"
+                @click="saveTBCookie"
+                :disabled="!isTBCookieChanged"
+              >
+                save
+              </button>
+              <button class="cancel-button" @click="cancelEditTBCookie">取消</button>
+            </template>
+          </div>
+        </div>
         <div class="divider"></div>
       </div>
       <div class="watched-products">关注的商品：</div>
@@ -151,11 +211,11 @@ export default {
     ProductDetail
   },
   data() {
-    const email = localStorage.getItem('email');
-    console.log('Email from localStorage:', email);
     return {
       username: localStorage.getItem('username') || '用户',
-      email: email || '',
+      email: localStorage.getItem('email') || '',
+      jdCookie: localStorage.getItem('jdCookie') || '',
+      tbCookie: localStorage.getItem('tbCookie') || '',
       editingUsername: false,
       editingEmail: false,
       editUsername: '',
@@ -185,7 +245,13 @@ export default {
         }
       ],
       showProductDetail: false,
-      currentProduct: null
+      currentProduct: null,
+      editingJDCookie: false,
+      editingTBCookie: false,
+      editJDCookie: '',
+      editTBCookie: '',
+      originalJDCookie: '',
+      originalTBCookie: ''
     }
   },
   computed: {
@@ -194,13 +260,21 @@ export default {
     },
     isEmailChanged() {
       return this.editEmail.trim() !== this.originalEmail;
+    },
+    isJDCookieChanged() {
+      return this.editJDCookie.trim() !== this.originalJDCookie;
+    },
+    isTBCookieChanged() {
+      return this.editTBCookie.trim() !== this.originalTBCookie;
     }
   },
   methods: {
     handleLogout() {
       localStorage.removeItem('isAuthenticated');
       localStorage.removeItem('username');
-      localStorage.removeItem('email');  // 登出时也清除邮箱
+      localStorage.removeItem('email');
+      localStorage.removeItem('jdCookie');
+      localStorage.removeItem('tbCookie');
       this.$router.push('/');
     },
     handleDelete() {
@@ -215,11 +289,11 @@ export default {
           
           if (response.data.code === 200) {
             this.$message.success('账号已注销');
-            // 清除本地存储
             localStorage.removeItem('isAuthenticated');
             localStorage.removeItem('username');
             localStorage.removeItem('email');
-            // 跳转到登录页
+            localStorage.removeItem('jdCookie');
+            localStorage.removeItem('tbCookie');
             this.$router.push('/');
           } else {
             this.$message.error(response.data.msg || '注销失败');
@@ -245,7 +319,7 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
-        // 这里添加取消关注的逻辑
+        // 里添加取消关注的逻辑
         this.$message.success('已取消关注');
       }).catch(() => {
         this.$message.info('已取消操作');
@@ -260,6 +334,16 @@ export default {
       this.editEmail = this.email;
       this.originalEmail = this.email;
       this.editingEmail = true;
+    },
+    startEditJDCookie() {
+      this.editJDCookie = this.jdCookie;
+      this.originalJDCookie = this.jdCookie;
+      this.editingJDCookie = true;
+    },
+    startEditTBCookie() {
+      this.editTBCookie = this.tbCookie;
+      this.originalTBCookie = this.tbCookie;
+      this.editingTBCookie = true;
     },
     async saveUsername() {
       if (!this.editUsername.trim()) {
@@ -318,11 +402,67 @@ export default {
         this.$message.error(error.response?.data?.msg || '邮箱修改失败');
       }
     },
+    async saveJDCookie() {
+      if (!this.editJDCookie.trim()) {
+        this.$message.warning('Cookie 不能为空！');
+        return;
+      }
+
+      try {
+        const response = await this.$axios.put('/user/update-jd-cookie', {
+          email: this.email,
+          jdCookie: this.editJDCookie.trim()
+        });
+
+        if (response.data.code === 200) {
+          this.jdCookie = this.editJDCookie.trim();
+          localStorage.setItem('jdCookie', this.jdCookie);
+          this.editingJDCookie = false;
+          this.$message.success('京东 Cookie 修改成功！');
+        } else {
+          this.$message.error(response.data.msg || '修改失败');
+        }
+      } catch (error) {
+        console.error('Update JD cookie error:', error);
+        this.$message.error(error.response?.data?.msg || '修改失败');
+      }
+    },
+    async saveTBCookie() {
+      if (!this.editTBCookie.trim()) {
+        this.$message.warning('Cookie 不能为空！');
+        return;
+      }
+
+      try {
+        const response = await this.$axios.put('/user/update-tb-cookie', {
+          email: this.email,
+          tbCookie: this.editTBCookie.trim()
+        });
+
+        if (response.data.code === 200) {
+          this.tbCookie = this.editTBCookie.trim();
+          localStorage.setItem('tbCookie', this.tbCookie);
+          this.editingTBCookie = false;
+          this.$message.success('淘宝 Cookie 修改成功！');
+        } else {
+          this.$message.error(response.data.msg || '修改失败');
+        }
+      } catch (error) {
+        console.error('Update TB cookie error:', error);
+        this.$message.error(error.response?.data?.msg || '修改失败');
+      }
+    },
     cancelEditUsername() {
       this.editingUsername = false;
     },
     cancelEditEmail() {
       this.editingEmail = false;
+    },
+    cancelEditJDCookie() {
+      this.editingJDCookie = false;
+    },
+    cancelEditTBCookie() {
+      this.editingTBCookie = false;
     },
     handleResetPassword() {
       // 获取当前用户信息
@@ -339,6 +479,25 @@ export default {
         }
       });
     }
+  },
+  created() {
+    // 从 localStorage 获取数据
+    this.username = localStorage.getItem('username') || '用户';
+    this.email = localStorage.getItem('email') || '';
+    
+    // 获取 cookie
+    const jdCookie = localStorage.getItem('jdCookie');
+    const tbCookie = localStorage.getItem('tbCookie');
+    
+    this.jdCookie = jdCookie === 'null' ? '' : (jdCookie || '');
+    this.tbCookie = tbCookie === 'null' ? '' : (tbCookie || '');
+    
+    console.log('Profile data loaded:', {
+      username: this.username,
+      email: this.email,
+      jdCookie: this.jdCookie,
+      tbCookie: this.tbCookie
+    });
   }
 }
 </script>
@@ -633,5 +792,9 @@ export default {
   padding: 8px 15px;
   font-size: 12px;
   margin: 0;
+}
+
+.cookie-input {
+  width: 500px;  /* 加大 cookie 输入框的宽度 */
 }
 </style>

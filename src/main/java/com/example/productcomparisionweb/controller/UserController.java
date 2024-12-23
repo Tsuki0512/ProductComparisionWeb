@@ -6,12 +6,14 @@ import com.example.productcomparisionweb.common.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.util.DigestUtils;
+import org.json.JSONObject;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @RestController
-@CrossOrigin
+@CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true")
 @RequestMapping("/user")
 public class UserController {
 
@@ -127,6 +129,71 @@ public class UserController {
             }
         } catch (Exception e) {
             return Result.error("更新邮箱失败：" + e.getMessage());
+        }
+    }
+
+    @PostMapping("/login")
+    public Result login(@RequestBody User user) {
+        System.out.println("Received login request for username: " + user.getUsername());
+        User res = userMapper.login(user.getUsername(), user.getPassword());
+        if (res == null) {
+            return Result.error("用户名或密码错误");
+        }
+        
+        // 打印调试信息
+        System.out.println("Found user: " + res);
+        System.out.println("JD Cookie from DB: " + res.getJd_cookie());
+        System.out.println("TB Cookie from DB: " + res.getTb_cookie());
+        
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("username", res.getUsername());
+        userInfo.put("email", res.getEmail());
+        userInfo.put("jd_cookie", res.getJd_cookie());
+        userInfo.put("tb_cookie", res.getTb_cookie());
+        
+        System.out.println("Response data: " + userInfo);
+        return Result.success(userInfo);
+    }
+
+    @PutMapping("/update-jd-cookie")
+    public Result updateJDCookie(@RequestBody Map<String, String> params) {
+        String email = params.get("email");
+        String jdCookie = params.get("jdCookie");
+        
+        if (email == null || jdCookie == null) {
+            return Result.error("参数不完整");
+        }
+
+        try {
+            int rows = userMapper.updateJDCookie(email, jdCookie);
+            if (rows > 0) {
+                return Result.success("京东 Cookie 更新成功");
+            } else {
+                return Result.error("用户不存在");
+            }
+        } catch (Exception e) {
+            return Result.error("更新失败：" + e.getMessage());
+        }
+    }
+
+    @PutMapping("/update-tb-cookie")
+    public Result updateTBCookie(@RequestBody Map<String, String> params) {
+        String email = params.get("email");
+        String tbCookie = params.get("tbCookie");
+        
+        if (email == null || tbCookie == null) {
+            return Result.error("参数不完整");
+        }
+
+        try {
+            int rows = userMapper.updateTBCookie(email, tbCookie);
+            if (rows > 0) {
+                return Result.success("淘宝 Cookie 更新成功");
+            } else {
+                return Result.error("用户不存在");
+            }
+        } catch (Exception e) {
+            return Result.error("更新失败：" + e.getMessage());
         }
     }
 }

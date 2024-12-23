@@ -8,10 +8,41 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Results;
+import org.apache.ibatis.annotations.Result;
+import org.springframework.stereotype.Repository;
+import java.util.List;
+import org.apache.ibatis.type.JdbcType;
 
 @Mapper
+@Repository
 public interface UserMapper extends BaseMapper<User> {
-    @Select("select * from user where email = #{email}")
+    @Select("SELECT uid, email, username, password, " +
+            "CONVERT(jd_cookie USING utf8) as jd_cookie, " +
+            "CONVERT(tb_cookie USING utf8) as tb_cookie " +
+            "FROM user")
+    @Results({
+        @Result(property = "uid", column = "uid"),
+        @Result(property = "username", column = "username"),
+        @Result(property = "email", column = "email"),
+        @Result(property = "password", column = "password"),
+        @Result(property = "jd_cookie", column = "jd_cookie"),
+        @Result(property = "tb_cookie", column = "tb_cookie")
+    })
+    List<User> selectList(Object o);
+
+    @Select("SELECT uid, email, username, password, " +
+            "CONVERT(jd_cookie USING utf8) as jd_cookie, " +
+            "CONVERT(tb_cookie USING utf8) as tb_cookie " +
+            "FROM user WHERE email = #{email}")
+    @Results({
+        @Result(property = "uid", column = "uid"),
+        @Result(property = "username", column = "username"),
+        @Result(property = "email", column = "email"),
+        @Result(property = "password", column = "password"),
+        @Result(property = "jd_cookie", column = "jd_cookie"),
+        @Result(property = "tb_cookie", column = "tb_cookie")
+    })
     User findByEmail(String email);
     
     @Insert("insert into user(email, username, password) values(#{email}, #{username}, #{password})")
@@ -28,4 +59,24 @@ public interface UserMapper extends BaseMapper<User> {
     
     @Update("update user set email = #{newEmail} where email = #{oldEmail}")
     int updateEmail(@Param("oldEmail") String oldEmail, @Param("newEmail") String newEmail);
+
+    @Select("SELECT uid, email, username, password, " +
+            "CONVERT(jd_cookie USING utf8) as jd_cookie, " +
+            "CONVERT(tb_cookie USING utf8) as tb_cookie " +
+            "FROM user WHERE username = #{username} AND password = #{password}")
+    @Results({
+        @Result(property = "uid", column = "uid"),
+        @Result(property = "username", column = "username"),
+        @Result(property = "email", column = "email"),
+        @Result(property = "password", column = "password"),
+        @Result(property = "jd_cookie", column = "jd_cookie"),
+        @Result(property = "tb_cookie", column = "tb_cookie")
+    })
+    User login(@Param("username") String username, @Param("password") String password);
+
+    @Update("UPDATE user SET jd_cookie = CONVERT(#{jd_cookie} USING utf8mb4) WHERE email = #{email}")
+    int updateJDCookie(@Param("email") String email, @Param("jd_cookie") String jdCookie);
+
+    @Update("UPDATE user SET tb_cookie = CONVERT(#{tb_cookie} USING utf8mb4) WHERE email = #{email}")
+    int updateTBCookie(@Param("email") String email, @Param("tb_cookie") String tbCookie);
 }

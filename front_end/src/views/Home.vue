@@ -244,26 +244,56 @@ export default {
       }
 
       try {
-        const response = await this.$axios.get('/product/search', {
-          params: {
-            keyword: this.searchQuery
-          }
-        });
+        console.log('开始搜索:', this.searchQuery);
+        
+        const params = {
+          keyword: this.searchQuery
+        };
 
-        if (response.data.code === 200) {
-          // 处理返回的商品数据
-          this.products = response.data.data.map(item => ({
+        // 从 localStorage 获取 cookie
+        if (this.selectedPlatform === 'jd') {
+          const jdCookie = localStorage.getItem('jdCookie');
+          console.log('jdCookie:', jdCookie);
+          if (!jdCookie) {
+            this.$message.error('请在个人主页设置京东 Cookie');
+            return;
+          }
+          params.jdCookie = jdCookie;
+        } else if (this.selectedPlatform === 'tmall') {
+          const tbCookie = localStorage.getItem('tbCookie');
+          console.log('tbCookie:', tbCookie);
+          if (!tbCookie) {
+            this.$message.error('请在个人主页设置淘宝 Cookie');
+            return;
+          }
+          params.tbCookie = tbCookie;
+        }
+
+        console.log('发送请求参数:', params);
+        
+        const response = await this.$axios.get('/product/search', { params });
+        console.log('搜索响应:', response.data);
+        
+        if (response.data.code === '200' || response.data.code === 200) {
+          const products = response.data.data;
+          if (!Array.isArray(products)) {
+            console.error('返回的数据不是数组:', products);
+            this.$message.error('数据格式错误');
+            return;
+          }
+
+          this.products = products.map(item => ({
             name: item.productname,
             price: `¥${item.current_price}`,
             platform: item.platform,
             barcode: item.barcode,
             image: item.image_url,
-            spec: item.specification,
-            link: '#', // 这里可以添加商品链接
+            spec: item.specification || '',
+            link: '#',
             variants: [
               { 
                 id: 1, 
-                name: item.specification, 
+                name: item.specification || '默认规格', 
                 price: item.current_price.toString() 
               }
             ],
@@ -271,19 +301,22 @@ export default {
               {
                 date: new Date().toISOString().split('T')[0],
                 price: item.current_price,
-                variant: item.specification
+                variant: item.specification || '默认规格'
               }
             ]
           }));
 
           if (this.products.length === 0) {
             this.$message.info('未找到相关商品');
+          } else {
+            console.log('处理后的商品数据:', this.products);
+            this.$message.success(`找到 ${this.products.length} 个商品`);
           }
         } else {
           this.$message.error(response.data.msg || '搜索失败');
         }
       } catch (error) {
-        console.error('Search error:', error);
+        console.error('搜索错误:', error);
         this.$message.error('搜索失败：' + (error.response?.data?.msg || error.message));
       }
     },
@@ -566,7 +599,7 @@ export default {
   font-size: 12px;
 }
 
-/* 修改星星图标样式 */
+/* 改星星图标样式 */
 :deep(.fa-star), :deep(.fa-star-o) {
   font-size: 16px;
   color: #999;
@@ -624,5 +657,20 @@ export default {
 
 :deep(.is-starred .el-icon) {
   color: #f0c24b;
+}
+
+.cookie-input {
+  width: 300px;
+  height: 40px;
+  padding: 0 15px;
+  margin-right: 10px;
+  border: 2px solid #7ea8d1;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.cookie-input:focus {
+  outline: none;
+  border-color: #3f5bad;
 }
 </style> 

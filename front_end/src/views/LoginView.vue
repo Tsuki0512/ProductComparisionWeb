@@ -46,29 +46,46 @@ export default {
     }
   },
   methods: {
-    handleLogin() {
-      if (this.username && this.password) {
-        // 暂时模拟登录成功的情况
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('username', this.username);
-        localStorage.setItem('email', `${this.username}@example.com`);  // 暂时使用模拟的邮箱
-        this.$router.push('/home');
-        
-        // 实际的API调用（等后端ready后启用）
-        /*
-        this.$axios.post('/login', {
+    async handleLogin() {
+      try {
+        const response = await this.$axios.post('/user/login', {
           username: this.username,
           password: this.password
-        }).then(response => {
-          localStorage.setItem('isAuthenticated', 'true');
-          localStorage.setItem('username', this.username);
-          localStorage.setItem('email', response.data.email);
-          this.$router.push('/home');
-        }).catch(error => {
-          console.error('登录失败:', error);
-          alert('登录失败，请检查用户名和密码');
         });
-        */
+        
+        console.log('Raw login response:', response.data);
+        
+        if (response.data.code === '200') {
+          const userData = response.data.data;
+          console.log('User data from server:', userData);
+          
+          // 存储用户信息
+          localStorage.setItem('isAuthenticated', 'true');
+          localStorage.setItem('username', userData.username);
+          localStorage.setItem('email', userData.email);
+          
+          // 存储 cookie，使用空字符串作为默认值
+          const jdCookie = userData.jd_cookie === null ? '' : userData.jd_cookie;
+          const tbCookie = userData.tb_cookie === null ? '' : userData.tb_cookie;
+          
+          localStorage.setItem('jdCookie', jdCookie);
+          localStorage.setItem('tbCookie', tbCookie);
+          
+          // 打印存储后的值
+          console.log('Stored values:', {
+            username: localStorage.getItem('username'),
+            email: localStorage.getItem('email'),
+            jdCookie: localStorage.getItem('jdCookie'),
+            tbCookie: localStorage.getItem('tbCookie')
+          });
+          
+          this.$router.push('/');
+        } else {
+          this.$message.error(response.data.msg || '登录失败');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        this.$message.error('登录失败：' + (error.response?.data?.msg || error.message));
       }
     },
     async handleRegister() {

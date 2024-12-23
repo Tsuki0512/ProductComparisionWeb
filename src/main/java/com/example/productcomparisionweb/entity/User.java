@@ -1,25 +1,33 @@
 package com.example.productcomparisionweb.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+
+@Data
+@TableName(value = "user", autoResultMap = true)
 public class User {
-    private int uid;
-    private String email;
+    @TableId(type = IdType.AUTO)
+    private Integer uid;
+    
     private String username;
     private String password;
-
-    public int getUid() {
+    private String email;
+    
+    @TableField(value = "jd_cookie", typeHandler = org.apache.ibatis.type.StringTypeHandler.class)
+    private String jd_cookie;
+    
+    @TableField(value = "tb_cookie", typeHandler = org.apache.ibatis.type.StringTypeHandler.class)
+    private String tb_cookie;
+    
+    public Integer getUid() {
         return uid;
     }
 
-    public void setUid(int uid) {
+    public void setUid(Integer uid) {
         this.uid = uid;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getUsername() {
@@ -38,13 +46,39 @@ public class User {
         this.password = password;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getJd_cookie() {
+        return jd_cookie;
+    }
+
+    public void setJd_cookie(String jd_cookie) {
+        this.jd_cookie = jd_cookie;
+    }
+
+    public String getTb_cookie() {
+        return tb_cookie;
+    }
+
     @Override
     public String toString() {
         return "User{" +
                 "uid=" + uid +
-                ", email='" + email + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +
+                ", email='" + email + '\'' +
+                ", jd_cookie='" + jd_cookie + '\'' +
+                ", tb_cookie='" + tb_cookie + '\'' +
                 '}';
+    }
+
+    public void setTb_cookie(String tb_cookie) {
+        this.tb_cookie = tb_cookie;
     }
 }
