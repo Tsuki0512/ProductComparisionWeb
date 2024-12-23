@@ -53,26 +53,18 @@ export default {
           password: this.password
         });
         
-        console.log('Raw login response:', response.data);
+        console.log('Login response:', response.data);
         
         if (response.data.code === '200') {
           const userData = response.data.data;
-          console.log('User data from server:', userData);
-          
-          // 存储用户信息
           localStorage.setItem('isAuthenticated', 'true');
           localStorage.setItem('username', userData.username);
           localStorage.setItem('email', userData.email);
           
-          // 存储 cookie，使用空字符串作为默认值
-          const jdCookie = userData.jd_cookie === null ? '' : userData.jd_cookie;
-          const tbCookie = userData.tb_cookie === null ? '' : userData.tb_cookie;
+          localStorage.setItem('jdCookie', userData.jd_cookie || '');
+          localStorage.setItem('tbCookie', userData.tb_cookie || '');
           
-          localStorage.setItem('jdCookie', jdCookie);
-          localStorage.setItem('tbCookie', tbCookie);
-          
-          // 打印存储后的值
-          console.log('Stored values:', {
+          console.log('Stored data:', {
             username: localStorage.getItem('username'),
             email: localStorage.getItem('email'),
             jdCookie: localStorage.getItem('jdCookie'),

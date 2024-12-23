@@ -138,6 +138,8 @@ export default {
     return {
       username: localStorage.getItem('username') || '户',
       searchQuery: '',
+      jdCookie: '',
+      tbCookie: '',
       products: [],
       showProductDetail: false,
       currentProduct: null,
@@ -245,10 +247,6 @@ export default {
 
       try {
         console.log('开始搜索:', this.searchQuery);
-        
-        const params = {
-          keyword: this.searchQuery
-        };
 
         // 从 localStorage 获取 cookie
         if (this.selectedPlatform === 'jd') {
@@ -258,7 +256,7 @@ export default {
             this.$message.error('请在个人主页设置京东 Cookie');
             return;
           }
-          params.jdCookie = jdCookie;
+          this.jdCookie = jdCookie;
         } else if (this.selectedPlatform === 'tmall') {
           const tbCookie = localStorage.getItem('tbCookie');
           console.log('tbCookie:', tbCookie);
@@ -266,8 +264,14 @@ export default {
             this.$message.error('请在个人主页设置淘宝 Cookie');
             return;
           }
-          params.tbCookie = tbCookie;
+          this.tbCookie = tbCookie;
         }
+
+        const params = {
+          keyword: this.searchQuery,
+          jdCookie: this.jdCookie,
+          tbCookie: this.tbCookie
+        };
 
         console.log('发送请求参数:', params);
         

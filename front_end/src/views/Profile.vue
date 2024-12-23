@@ -87,18 +87,20 @@
           </div>
         </div>
         <div class="info-row">
-          <span class="info-label">
-            京东 Cookie：
-            <template v-if="!editingJDCookie">
-              {{ jdCookie || '未设置' }}
-            </template>
-            <input 
-              v-else
-              v-model="editJDCookie" 
-              class="edit-input cookie-input"
-              type="text"
-            >
-          </span>
+          <div class="info-content">
+            <span class="label-text">京东 Cookie：</span>
+            <div class="value-container">
+              <template v-if="!editingJDCookie">
+                <div class="cookie-text">{{ jdCookie || '未设置' }}</div>
+              </template>
+              <input 
+                v-else
+                v-model="editJDCookie" 
+                class="edit-input cookie-input"
+                type="text"
+              >
+            </div>
+          </div>
           <div class="button-group-small">
             <template v-if="!editingJDCookie">
               <button class="update-button" @click="startEditJDCookie">update</button>
@@ -117,18 +119,20 @@
           </div>
         </div>
         <div class="info-row">
-          <span class="info-label">
-            淘宝 Cookie：
-            <template v-if="!editingTBCookie">
-              {{ tbCookie || '未设置' }}
-            </template>
-            <input 
-              v-else
-              v-model="editTBCookie" 
-              class="edit-input cookie-input"
-              type="text"
-            >
-          </span>
+          <div class="info-content">
+            <span class="label-text">淘宝 Cookie：</span>
+            <div class="value-container">
+              <template v-if="!editingTBCookie">
+                <div class="cookie-text">{{ tbCookie || '未设置' }}</div>
+              </template>
+              <input 
+                v-else
+                v-model="editTBCookie" 
+                class="edit-input cookie-input"
+                type="text"
+              >
+            </div>
+          </div>
           <div class="button-group-small">
             <template v-if="!editingTBCookie">
               <button class="update-button" @click="startEditTBCookie">update</button>
@@ -212,12 +216,14 @@ export default {
   },
   data() {
     return {
-      username: localStorage.getItem('username') || '用户',
-      email: localStorage.getItem('email') || '',
-      jdCookie: localStorage.getItem('jdCookie') || '',
-      tbCookie: localStorage.getItem('tbCookie') || '',
+      username: '',
+      email: '',
+      jdCookie: '',
+      tbCookie: '',
       editingUsername: false,
       editingEmail: false,
+      editingJDCookie: false,
+      editingTBCookie: false,
       editUsername: '',
       editEmail: '',
       originalUsername: '',
@@ -246,8 +252,6 @@ export default {
       ],
       showProductDetail: false,
       currentProduct: null,
-      editingJDCookie: false,
-      editingTBCookie: false,
       editJDCookie: '',
       editTBCookie: '',
       originalJDCookie: '',
@@ -347,7 +351,7 @@ export default {
     },
     async saveUsername() {
       if (!this.editUsername.trim()) {
-        this.$message.warning('用户名不能为空！');
+        this.$message.warning('用户名不能为空');
         return;
       }
 
@@ -403,19 +407,14 @@ export default {
       }
     },
     async saveJDCookie() {
-      if (!this.editJDCookie.trim()) {
-        this.$message.warning('Cookie 不能为空！');
-        return;
-      }
-
       try {
         const response = await this.$axios.put('/user/update-jd-cookie', {
           email: this.email,
-          jdCookie: this.editJDCookie.trim()
+          jdCookie: this.editJDCookie
         });
-
+        
         if (response.data.code === 200) {
-          this.jdCookie = this.editJDCookie.trim();
+          this.jdCookie = this.editJDCookie;
           localStorage.setItem('jdCookie', this.jdCookie);
           this.editingJDCookie = false;
           this.$message.success('京东 Cookie 修改成功！');
@@ -428,19 +427,14 @@ export default {
       }
     },
     async saveTBCookie() {
-      if (!this.editTBCookie.trim()) {
-        this.$message.warning('Cookie 不能为空！');
-        return;
-      }
-
       try {
         const response = await this.$axios.put('/user/update-tb-cookie', {
           email: this.email,
-          tbCookie: this.editTBCookie.trim()
+          tbCookie: this.editTBCookie
         });
-
+        
         if (response.data.code === 200) {
-          this.tbCookie = this.editTBCookie.trim();
+          this.tbCookie = this.editTBCookie;
           localStorage.setItem('tbCookie', this.tbCookie);
           this.editingTBCookie = false;
           this.$message.success('淘宝 Cookie 修改成功！');
@@ -469,7 +463,7 @@ export default {
       const username = localStorage.getItem('username');
       const email = localStorage.getItem('email');
       
-      // 跳转到修改密码页面并传递用户信息
+      // 跳到修改密码页面并传递用户信息
       this.$router.push({
         path: '/reset-password',
         query: { 
@@ -484,15 +478,10 @@ export default {
     // 从 localStorage 获取数据
     this.username = localStorage.getItem('username') || '用户';
     this.email = localStorage.getItem('email') || '';
+    this.jdCookie = localStorage.getItem('jdCookie') || '';
+    this.tbCookie = localStorage.getItem('tbCookie') || '';
     
-    // 获取 cookie
-    const jdCookie = localStorage.getItem('jdCookie');
-    const tbCookie = localStorage.getItem('tbCookie');
-    
-    this.jdCookie = jdCookie === 'null' ? '' : (jdCookie || '');
-    this.tbCookie = tbCookie === 'null' ? '' : (tbCookie || '');
-    
-    console.log('Profile data loaded:', {
+    console.log('Profile loaded data:', {
       username: this.username,
       email: this.email,
       jdCookie: this.jdCookie,
@@ -651,7 +640,7 @@ export default {
   margin: 15px 30px;
 }
 
-/* 内区域样式 */
+/* 内区样式 */
 .profile-content {
   max-width: 1000px;
   margin: 0 auto;
@@ -668,31 +657,52 @@ export default {
 
 .info-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-  padding: 5px 0;
+  padding: 10px 0;
+  gap: 20px;
 }
 
 .info-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
   color: #3f5bad;
   font-size: 16px;
 }
 
-/* 编辑相关样式 */
+.info-label > span {
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.info-label > template {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .edit-input {
+  flex: 1;
+  min-width: 0;
   border: 1px solid #3f5bad;
   border-radius: 4px;
   padding: 4px 8px;
   font-size: 16px;
   color: #3f5bad;
-  width: 200px;
-  margin-left: 8px;
+}
+
+.cookie-input {
+  width: 100%;
 }
 
 .button-group-small {
   display: flex;
   gap: 8px;
+  width: 120px;
+  flex-shrink: 0;
 }
 
 .update-button {
@@ -795,6 +805,81 @@ export default {
 }
 
 .cookie-input {
-  width: 500px;  /* 加大 cookie 输入框的宽度 */
+  width: 350px !important;
+  max-width: calc(100% - 150px) !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 120px;
+}
+
+/* 添加标签文本的样式 */
+.info-label > span {
+  flex-shrink: 0;
+  margin-right: 10px;
+  min-width: fit-content;
+  position: absolute;
+  left: 0;
+}
+
+/* 内容区域容器 */
+.info-content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+/* 标签文本 */
+.label-text {
+  width: 120px;
+  color: #3f5bad;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+/* 值容器 */
+.value-container {
+  flex: 1;
+  min-width: 0;
+  padding-right: 20px;
+  margin-left: 0;
+}
+
+/* cookie 文本显示 */
+.cookie-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #3f5bad;
+  margin-left: 8px;
+}
+
+/* cookie 输入框 */
+.cookie-input {
+  width: 100% !important;
+  max-width: none !important;
+  border: 1px solid #3f5bad;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 16px;
+  color: #3f5bad;
+  margin-left: 8px;
+}
+
+/* 按钮组 */
+.button-group-small {
+  display: flex;
+  gap: 8px;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+/* 按钮样式 */
+.update-button, .save-button, .cancel-button {
+  padding: 5px 15px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 </style>

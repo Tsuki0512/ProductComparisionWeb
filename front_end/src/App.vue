@@ -66,8 +66,8 @@ export default {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('username', user.username);
         localStorage.setItem('email', user.email);
-        localStorage.setItem('jdCookie', user.jdCookie);
-        localStorage.setItem('tbCookie', user.tbCookie);
+        localStorage.setItem('jdCookie', user.jd_cookie);
+        localStorage.setItem('tbCookie', user.tb_cookie);
 
         // 使用 Element Plus 的消息提示
         this.$message({

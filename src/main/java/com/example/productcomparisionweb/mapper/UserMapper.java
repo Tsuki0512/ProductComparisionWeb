@@ -17,10 +17,7 @@ import org.apache.ibatis.type.JdbcType;
 @Mapper
 @Repository
 public interface UserMapper extends BaseMapper<User> {
-    @Select("SELECT uid, email, username, password, " +
-            "CONVERT(jd_cookie USING utf8) as jd_cookie, " +
-            "CONVERT(tb_cookie USING utf8) as tb_cookie " +
-            "FROM user")
+    @Select("SELECT * FROM user")
     @Results({
         @Result(property = "uid", column = "uid"),
         @Result(property = "username", column = "username"),
@@ -31,10 +28,7 @@ public interface UserMapper extends BaseMapper<User> {
     })
     List<User> selectList(Object o);
 
-    @Select("SELECT uid, email, username, password, " +
-            "CONVERT(jd_cookie USING utf8) as jd_cookie, " +
-            "CONVERT(tb_cookie USING utf8) as tb_cookie " +
-            "FROM user WHERE email = #{email}")
+    @Select("SELECT * FROM user WHERE email = #{email}")
     @Results({
         @Result(property = "uid", column = "uid"),
         @Result(property = "username", column = "username"),
@@ -60,10 +54,7 @@ public interface UserMapper extends BaseMapper<User> {
     @Update("update user set email = #{newEmail} where email = #{oldEmail}")
     int updateEmail(@Param("oldEmail") String oldEmail, @Param("newEmail") String newEmail);
 
-    @Select("SELECT uid, email, username, password, " +
-            "CONVERT(jd_cookie USING utf8) as jd_cookie, " +
-            "CONVERT(tb_cookie USING utf8) as tb_cookie " +
-            "FROM user WHERE username = #{username} AND password = #{password}")
+    @Select("SELECT * FROM user WHERE username = #{username} AND password = #{password}")
     @Results({
         @Result(property = "uid", column = "uid"),
         @Result(property = "username", column = "username"),
@@ -74,9 +65,9 @@ public interface UserMapper extends BaseMapper<User> {
     })
     User login(@Param("username") String username, @Param("password") String password);
 
-    @Update("UPDATE user SET jd_cookie = CONVERT(#{jd_cookie} USING utf8mb4) WHERE email = #{email}")
+    @Update("UPDATE user SET jd_cookie = #{jd_cookie} WHERE email = #{email}")
     int updateJDCookie(@Param("email") String email, @Param("jd_cookie") String jdCookie);
 
-    @Update("UPDATE user SET tb_cookie = CONVERT(#{tb_cookie} USING utf8mb4) WHERE email = #{email}")
+    @Update("UPDATE user SET tb_cookie = #{tb_cookie} WHERE email = #{email}")
     int updateTBCookie(@Param("email") String email, @Param("tb_cookie") String tbCookie);
 }

@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 @Data
-@TableName(value = "user", autoResultMap = true)
+@TableName("user")
 public class User {
     @TableId(type = IdType.AUTO)
     private Integer uid;
@@ -16,10 +16,10 @@ public class User {
     private String password;
     private String email;
     
-    @TableField(value = "jd_cookie", typeHandler = org.apache.ibatis.type.StringTypeHandler.class)
+    @TableField("jd_cookie")
     private String jd_cookie;
     
-    @TableField(value = "tb_cookie", typeHandler = org.apache.ibatis.type.StringTypeHandler.class)
+    @TableField("tb_cookie")
     private String tb_cookie;
     
     public Integer getUid() {
