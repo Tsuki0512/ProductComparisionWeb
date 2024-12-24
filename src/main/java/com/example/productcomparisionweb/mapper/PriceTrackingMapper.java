@@ -35,4 +35,7 @@ public interface PriceTrackingMapper {
             "INNER JOIN price_tracking pt ON p.pid = pt.pid " +
             "WHERE pt.uid = #{uid} AND p.current_price IS NOT NULL")
     List<product> getTrackedProductDetails(@Param("uid") Integer uid);
+
+    @Select("SELECT uid FROM price_tracking WHERE pid = #{pid}")
+    List<Integer> getUsersByProduct(@Param("pid") Integer pid);
 } 

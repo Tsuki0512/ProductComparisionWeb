@@ -30,15 +30,26 @@ public class UserController {
     // 用户注册
     @PostMapping("/register")
     public Result register(@RequestBody User user) {
-        // 检查邮箱是否已存在
-        System.out.println(user);
-        User existUser = userMapper.findByEmail(user.getEmail());
-        if (existUser != null) {
-            return Result.error("该邮箱已被注册");
-        }
-        
-        // 插入用户数据
         try {
+            // 验证用户名和密码长度
+            if (user.getUsername() == null || user.getUsername().length() < 6) {
+                return Result.error("用户名长度必须大于6个字符");
+            }
+            if (user.getPassword() == null || user.getPassword().length() < 6) {
+                return Result.error("密码长度必须大于6个字符");
+            }
+            
+            // 检查用户名是否已存在
+            if (userMapper.findByUsername(user.getUsername()) != null) {
+                return Result.error("用户名已存在");
+            }
+            
+            // 检查邮箱是否已存在
+            if (userMapper.findByEmail(user.getEmail()) != null) {
+                return Result.error("邮箱已被注册");
+            }
+
+            // 插入用户数据
             int result = userMapper.insertUser(user);
             if (result > 0) {
                 return Result.success();
@@ -114,7 +125,7 @@ public class UserController {
         String oldEmail = params.get("oldEmail");
         String newEmail = params.get("newEmail");
 
-        // 检查新邮箱是否已被使用
+        // 检查新邮箱是否��被使用
         User existUser = userMapper.findByEmail(newEmail);
         if (existUser != null) {
             return Result.error("该邮箱已被使用");

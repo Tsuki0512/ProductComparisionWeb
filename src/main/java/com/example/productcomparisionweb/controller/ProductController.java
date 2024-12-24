@@ -3,6 +3,8 @@ package com.example.productcomparisionweb.controller;
 import com.example.productcomparisionweb.common.Result;
 import com.example.productcomparisionweb.mapper.ProductMapper;
 import com.example.productcomparisionweb.mapper.PriceTrackingMapper;
+import com.example.productcomparisionweb.mapper.UserMapper;
+import com.example.productcomparisionweb.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.json.JSONObject;
@@ -28,6 +30,12 @@ public class ProductController {
 
     @Autowired
     private PriceTrackingMapper priceTrackingMapper;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private EmailService emailService;
 
     @GetMapping("/search")
     public Result search(@RequestParam String keyword, 
@@ -196,14 +204,13 @@ public class ProductController {
             
             // 判断是否需要更新价格历史
             boolean shouldUpdate = false;
+            double lastPrice = 0;
             
             if (history.isEmpty()) {
-                // 如果是第一次记录，直接添加
                 shouldUpdate = true;
             } else {
                 // 获取最近一次的价格记录
                 String lastTime = null;
-                double lastPrice = 0;
                 
                 // 找到最近的时间记录
                 for (String time : history.keySet()) {
@@ -217,6 +224,11 @@ public class ProductController {
                 if (Math.abs(lastPrice - newPrice) > 0.01) {
                     shouldUpdate = true;
                     System.out.println("Price changed from " + lastPrice + " to " + newPrice);
+                    
+                    // 如果价格下降，发送降价提醒
+                    if (newPrice < lastPrice) {
+                        sendPriceDropNotification(existingProduct, lastPrice, newPrice);
+                    }
                 } else {
                     // 检查时间间隔是否超过3天
                     java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -243,6 +255,70 @@ public class ProductController {
         } catch (Exception e) {
             System.out.println("Error updating historical prices: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * 发送降价提醒邮件
+     */
+    private void sendPriceDropNotification(product product, double oldPrice, double newPrice) {
+        try {
+            System.out.println("\n=== Starting price drop notification process ===");
+            System.out.println("Product: " + product.getProductname());
+            System.out.println("Price dropped from " + oldPrice + " to " + newPrice);
+            
+            // 获取关注该商品的所有用户
+            List<Integer> userIds = priceTrackingMapper.getUsersByProduct(product.getPid());
+            System.out.println("Found " + userIds.size() + " users tracking this product");
+            
+            for (Integer uid : userIds) {
+                System.out.println("\nProcessing user ID: " + uid);
+                // 获取用户邮箱
+                String email = userMapper.getEmailByUid(uid);
+                System.out.println("User email: " + (email != null ? email : "null"));
+                
+                if (email != null && !email.isEmpty()) {
+                    // 构建邮件内容
+                    String subject = "商品降价提醒";
+                    String content = String.format(
+                        "您关注的商品 %s 降价了！\n\n" +
+                        "原价：¥%.2f\n" +
+                        "现价：¥%.2f\n" +
+                        "降价：¥%.2f\n\n" +
+                        "商品链接：%s\n",
+                        product.getProductname(),
+                        oldPrice,
+                        newPrice,
+                        oldPrice - newPrice,
+                        product.getSpecification()
+                    );
+                    
+                    System.out.println("Attempting to send email with content:");
+                    System.out.println("Subject: " + subject);
+                    System.out.println("Content: \n" + content);
+                    
+                    // 发送邮件
+                    boolean emailSent = emailService.sendSimpleEmail(email, subject, content);
+                    System.out.println("Email send result: " + (emailSent ? "SUCCESS" : "FAILED"));
+                    
+                    if (emailSent) {
+                        System.out.println("Successfully sent price drop notification to user " + uid + " at " + email);
+                    } else {
+                        System.out.println("Failed to send price drop notification to user " + uid + " at " + email);
+                    }
+                } else {
+                    System.out.println("Skipping user " + uid + " - no valid email address found");
+                }
+            }
+            System.out.println("=== Price drop notification process completed ===\n");
+        } catch (Exception e) {
+            System.out.println("\n=== Error in price drop notification process ===");
+            System.out.println("Product ID: " + product.getPid());
+            System.out.println("Product name: " + product.getProductname());
+            System.out.println("Error message: " + e.getMessage());
+            System.out.println("Stack trace:");
+            e.printStackTrace();
+            System.out.println("=== Error details end ===\n");
         }
     }
 

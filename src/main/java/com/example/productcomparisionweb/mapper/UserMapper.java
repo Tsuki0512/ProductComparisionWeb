@@ -39,6 +39,17 @@ public interface UserMapper extends BaseMapper<User> {
     })
     User findByEmail(String email);
     
+    @Select("SELECT * FROM user WHERE username = #{username}")
+    @Results({
+        @Result(property = "uid", column = "uid"),
+        @Result(property = "username", column = "username"),
+        @Result(property = "email", column = "email"),
+        @Result(property = "password", column = "password"),
+        @Result(property = "jd_cookie", column = "jd_cookie"),
+        @Result(property = "tb_cookie", column = "tb_cookie")
+    })
+    User findByUsername(String username);
+
     @Insert("insert into user(email, username, password) values(#{email}, #{username}, #{password})")
     int insertUser(User user);
 
@@ -70,4 +81,7 @@ public interface UserMapper extends BaseMapper<User> {
 
     @Update("UPDATE user SET tb_cookie = #{tb_cookie} WHERE email = #{email}")
     int updateTBCookie(@Param("email") String email, @Param("tb_cookie") String tbCookie);
+
+    @Select("SELECT email FROM user WHERE uid = #{uid}")
+    String getEmailByUid(@Param("uid") Integer uid);
 }

@@ -274,7 +274,7 @@ export default {
     },
     handleDelete() {
       this.$confirm('确定要注销账号吗？此操作不可恢复！', '警告', {
-        confirmButtonText: '确定注销',
+        confirmButtonText: '确定注���',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(async () => {
@@ -954,5 +954,240 @@ export default {
 .tracked-products h3 {
   margin-bottom: 20px;
   color: #3f5bad;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .profile {
+    padding: 10px;
+    background: #f5f7fa;
+  }
+
+  .header {
+    flex-direction: row;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    justify-content: space-between;
+    margin: 0 45px 45px 2px;
+    width: calc(100% - 0px);
+  }
+
+  .left-section {
+    width: auto;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+  }
+
+  .logo-image {
+    width: 70px;
+    margin-right: 0;
+  }
+
+  .site-title {
+    display: none;
+  }
+
+  .right-section {
+    width: auto;
+    text-align: right;
+    margin-right: 5px;
+    flex-grow: 1;
+  }
+
+  .title-section {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-right: 10px;
+  }
+
+  .welcome-text {
+    font-size: 24px;
+    margin: 0;
+    color: #3f5bad;
+    font-weight: bold;
+    text-align: center;
+    width: 100%;
+    white-space: nowrap;
+    letter-spacing: 2px;
+    margin-top: 20px;
+  }
+
+  .back-button {
+    font-size: 10px;
+    padding: 3px 12px;
+    margin-top: 12px;
+    margin-left: 10%;
+    min-width: 100px;
+  }
+
+  .fa-arrow-left {
+    font-size: 10px;
+    margin-right: 4px;
+  }
+
+  .button-group {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-top: -20px;
+    margin-bottom: 10px;
+  }
+
+  .info-container {
+    width: calc(100% - 10px);
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin: 20px 0px;
+    margin-top: -30px;
+  }
+
+  .info-row {
+    flex-direction: row;
+    margin-bottom: 15px;
+    background: #f8f9fc;
+    padding: 10px;
+    border-radius: 6px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .info-label {
+    width: auto;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .edit-input {
+    width: calc(100% - 70px);
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 0;
+    font-size: 13px;
+  }
+
+  .button-group-small {
+    width: auto;
+    justify-content: flex-end;
+    margin-top: 0;
+    gap: 8px;
+  }
+
+  .update-button, .save-button, .cancel-button {
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    min-width: 50px;
+  }
+
+  .watched-products {
+    font-size: 14px;
+    margin: 20px 0px 0px 10px;
+    padding: 8px;
+    color: #3f5bad;
+    font-weight: bold;
+    display: block;
+    background: white;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: calc(100% - 10px);
+  }
+
+  .products-table {
+    margin: -8px 0px 0px 0px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    padding: 8px;
+    width: calc(100% - 10px);
+  }
+
+  /* 表格适配 */
+  :deep(.el-table) {
+    font-size: 12px;
+    width: 100% !important;
+  }
+
+  :deep(.el-table th) {
+    padding: 6px 2px;
+    font-size: 12px;
+  }
+
+  :deep(.el-table td) {
+    padding: 6px 2px;
+  }
+
+  :deep(.el-button--small) {
+    padding: 4px 6px;
+    font-size: 11px;
+    min-width: 40px;
+  }
+
+  :deep(.el-table .cell) {
+    padding: 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Cookie 输入框特殊处理 */
+  .cookie-input {
+    width: calc(100% - 90px) !important;
+    margin-left: 0 !important;
+    font-size: 12px;
+  }
+
+  .cookie-text {
+    font-size: 12px;
+    margin-left: 0;
+  }
+
+  .label-text {
+    font-size: 13px;
+    width: auto;
+    margin-right: 10px;
+  }
+}
+
+/* 超小屏幕适配 */
+@media screen and (max-width: 480px) {
+  .action-button {
+    font-size: 12px;
+    padding: 4px 8px;
+    min-width: 70px;
+  }
+
+  .info-container {
+    padding: 10px;
+  }
+
+  .info-row {
+    padding: 8px;
+    margin-bottom: 15px;
+  }
+
+  .watched-products {
+    font-size: 14px;
+    margin: 15px 5px 5px;
+  }
+
+  :deep(.el-table) {
+    font-size: 11px;
+  }
 }
 </style>

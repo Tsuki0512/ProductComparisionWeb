@@ -392,4 +392,82 @@ export default {
 .detail-link:hover {
   text-decoration: underline;
 }
+
+/* 移动端适配样式 */
+@media screen and (max-width: 768px) {
+  .product-detail-box {
+    width: 95%;
+    padding: 15px;
+    margin: 10px;
+  }
+
+  .detail-content {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .product-image {
+    width: 100%;
+    height: 200px;
+  }
+
+  .detail-item {
+    flex-direction: column;
+    margin-bottom: 10px;
+  }
+
+  .detail-item .label {
+    width: 100%;
+    text-align: left;
+    margin-bottom: 5px;
+  }
+
+  .detail-item .value {
+    width: 100%;
+  }
+
+  .chart-container {
+    height: 250px;
+  }
+
+  .price-history {
+    margin-top: 15px;
+  }
+
+  .detail-header h3 {
+    font-size: 16px;
+  }
+
+  .link-tip {
+    font-size: 12px;
+    padding: 5px;
+  }
+}
+
+/* 更小屏幕的适配 */
+@media screen and (max-width: 480px) {
+  .product-detail-box {
+    padding: 10px;
+  }
+
+  .product-image {
+    height: 180px;
+  }
+
+  .chart-container {
+    height: 200px;
+  }
+
+  .price {
+    font-size: 16px;
+  }
+
+  .header-actions {
+    gap: 10px;
+  }
+
+  .fa-star, .fa-star-o, .close-button {
+    font-size: 16px;
+  }
+}
 </style> 

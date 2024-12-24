@@ -631,4 +631,96 @@ export default {
   outline: none;
   border-color: #3f5bad;
 }
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px;
+    margin: 0;
+    width: 100%;
+  }
+  
+  .left-section {
+    width: auto;
+    margin-left: 10px;
+    align-items: flex-start;
+  }
+
+  .logo-image {
+    width: 60px;
+    margin-bottom: 5px;
+  }
+
+  .right-section {
+    width: 100%;
+    margin: 0;
+    padding: 0 10px;
+  }
+
+  .welcome-container {
+    width: 100%;
+    margin: 10px 0;
+    padding: 0;
+    justify-content: flex-start;
+    gap: 50px;
+  }
+
+  .welcome-text {
+    font-size: 24px;
+    margin: 0;
+    margin-left: 10px;
+  }
+
+  .profile-button {
+    height: 35px;
+    font-size: 12px;
+    padding: 0 10px;
+    margin-left: 10px;
+  }
+
+  .search-container {
+    width: 90%;
+    margin: 10px auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .search-input {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .platform-select {
+    width: calc(100% - 45px);
+    margin: 0;
+  }
+
+  .search-button {
+    width: 35px;
+    height: 35px;
+    margin: 0;
+  }
+
+  .result-container {
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .products-table {
+    width: 100%;
+    margin: 10px 0;
+    padding: 10px;
+    overflow-x: auto;
+  }
+
+  /* 调整表格在移动端的显示 */
+  :deep(.el-table) {
+    width: 100% !important;
+    font-size: 12px;
+  }
+}
 </style> 
