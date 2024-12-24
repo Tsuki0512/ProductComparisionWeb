@@ -191,7 +191,7 @@
                 <el-button
                   size="small"
                   type="primary"
-                  @click="viewDetail(scope.row)"
+                  @click="handleDetail(scope.row)"
                 >
                   详细信息
                 </el-button>
@@ -209,9 +209,8 @@
       </div>
     </div>
     <ProductDetail 
-      v-if="selectedProduct"
       v-model:visible="showProductDetail"
-      :product="selectedProduct"
+      :product="currentProduct"
       :isStarred="true"
       @toggle-star="handleToggleStar"
     />
@@ -247,7 +246,7 @@ export default {
       originalTBCookie: '',
       trackedProducts: [],
       loading: false,
-      selectedProduct: null
+      currentProduct: null
     }
   },
   computed: {
@@ -305,35 +304,24 @@ export default {
     handleBack() {
       this.$router.push('/home');
     },
-    viewDetail(product) {
-      this.selectedProduct = {
-        name: product.productname,
-        price: product.current_price,
-        image: product.image_url,
-        spec: product.specification || '',
-        link: product.specification,
-        pid: product.pid,
-        platform: product.platform,
-        barcode: product.barcode,
-        variants: [
-          {
-            id: 1,
-            name: product.specification || '默认规格',
-            price: product.current_price.toString()
-          }
-        ],
-        priceHistory: Array.isArray(product.historical_prices) 
-          ? product.historical_prices 
-          : [
-              {
-                date: new Date().toISOString().split('T')[0],
-                price: product.current_price,
-                variant: product.specification || '默认规格'
-              }
-            ]
+    handleDetail(row) {
+      console.log('Opening detail for product:', row);
+      this.currentProduct = {
+        name: row.productname,
+        price: row.current_price,
+        image: row.image_url,
+        spec: row.specification || '',
+        link: row.specification,
+        pid: row.pid,
+        platform: row.platform,
+        barcode: row.barcode,
+        productname: row.productname,
+        current_price: row.current_price,
+        image_url: row.image_url,
+        historical_prices: row.historical_prices
       };
-      console.log('Selected product for detail:', this.selectedProduct);
       this.showProductDetail = true;
+      console.log('Current product set to:', this.currentProduct);
     },
     startEditUsername() {
       this.editUsername = this.username;
@@ -828,7 +816,7 @@ export default {
   background-color: #fff1f0;
 }
 
-/* 商品列表区域样式 */
+/* 商品列表区样式 */
 .watched-products {
   background-color: #3f5bad;
   color: white;

@@ -201,49 +201,10 @@ export default {
         productname: row.productname,
         current_price: row.current_price,
         image_url: row.image_url,
-        variants: [
-          {
-            id: 1,
-            name: row.specification || '默认规格',
-            price: row.current_price.toString()
-          }
-        ],
-        priceHistory: [
-          {
-            date: new Date().toISOString().split('T')[0],
-            price: row.current_price,
-            variant: '默认规格'
-          }
-        ]
+        historical_prices: row.historical_prices
       };
 
-      if (row.historical_prices) {
-        try {
-          const history = typeof row.historical_prices === 'string' 
-            ? JSON.parse(row.historical_prices) 
-            : row.historical_prices;
-          
-          if (history.current) {
-            this.currentProduct.priceHistory.push({
-              date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
-              price: parseFloat(history.current),
-              variant: '默认规格'
-            });
-          }
-          if (history.original && history.original !== history.current) {
-            this.currentProduct.priceHistory.push({
-              date: new Date(Date.now() - 86400000 * 7).toISOString().split('T')[0],
-              price: parseFloat(history.original),
-              variant: '默认规格'
-            });
-          }
-        } catch (e) {
-          console.error('解析价格历史失败:', e);
-        }
-      }
-
-      this.currentProduct.priceHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
-      console.log('Price history:', this.currentProduct.priceHistory);
+      console.log('Selected product with history:', this.currentProduct); // 调试日志
       this.showProductDetail = true;
     },
     handleProfile() {
@@ -298,6 +259,40 @@ export default {
         console.error('加载收藏商品失败:', error);
       }
     },
+    updateChart() {
+      if (!this.chart || !this.product?.priceHistory?.length) return;
+
+      // 解析历史价格数据
+      const history = JSON.parse(this.product.historical_prices || '{}');
+      const sortedDates = Object.keys(history).sort();
+      const prices = sortedDates.map(date => parseFloat(history[date]));
+      
+      // 格式化日期显示
+      const formattedDates = sortedDates.map(date => {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      });
+
+      const option = {
+        tooltip: {
+          trigger: 'axis',
+          formatter: function(params) {
+            const data = params[0];
+            return `时间：${data.name}<br/>价格：¥${data.value.toFixed(2)}`;
+          }
+        },
+        xAxis: {
+          type: 'category',
+          data: formattedDates,
+          axisLabel: {
+            rotate: 45
+          }
+        },
+        // ... 其他配置保持不变
+      };
+
+      this.chart.setOption(option);
+    }
   },
   computed: {
     isLoggedIn() {

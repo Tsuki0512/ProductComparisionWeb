@@ -43,7 +43,22 @@ public interface ProductMapper {
     })
     List<product> searchByKeyword(@Param("keyword") String keyword, @Param("platform") String platform);
 
-    @Select("SELECT * FROM product WHERE barcode = #{barcode} AND platform = #{platform}")
+    @Select({
+        "SELECT * FROM product",
+        "WHERE barcode = #{barcode}",
+        "AND platform = #{platform}"
+    })
+    @Results({
+        @Result(property = "pid", column = "pid"),
+        @Result(property = "productname", column = "productname"),
+        @Result(property = "platform", column = "platform"),
+        @Result(property = "current_price", column = "current_price"),
+        @Result(property = "image_url", column = "image_url"),
+        @Result(property = "barcode", column = "barcode"),
+        @Result(property = "specification", column = "specification"),
+        @Result(property = "historical_prices", column = "historical_prices"),
+        @Result(property = "category", column = "category")
+    })
     product findByBarcodeAndPlatform(@Param("barcode") String barcode, @Param("platform") String platform);
 
     @Update("UPDATE product SET " +

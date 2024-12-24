@@ -79,7 +79,7 @@ def jd_fetch_page(keyword: str, page: int, cookie: str) -> dict:
         if response.status_code != 200:
             print(f'京东搜索请求失败: {response.status_code}')
             return {}
-        print(response.text)
+        #print(response.text)
         return parse_jd_search_html(response.text)
 
     except Exception as e:

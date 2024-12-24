@@ -88,7 +88,7 @@ export default {
         })
       }
     },
-    'product.priceHistory': {
+    'product.historical_prices': {
       handler() {
         this.$nextTick(() => {
           if (this.visible) {
@@ -114,71 +114,101 @@ export default {
       this.updateChart()
     },
     updateChart() {
-      if (!this.chart || !this.product?.priceHistory?.length) return
+      if (!this.chart || !this.product?.historical_prices) return;
 
-      const dates = this.product.priceHistory.map(item => item.date)
-      const prices = this.product.priceHistory.map(item => item.price)
+      console.log('Raw historical prices:', this.product.historical_prices);
+      
+      try {
+        // 解析历史价格数据
+        const history = typeof this.product.historical_prices === 'string' 
+          ? JSON.parse(this.product.historical_prices) 
+          : this.product.historical_prices;
+        console.log('Parsed history:', history);
+        
+        // 按时间排序
+        const sortedDates = Object.keys(history).sort((a, b) => {
+          const dateA = new Date(a);
+          const dateB = new Date(b);
+          return dateA - dateB;
+        });
+        console.log('Sorted dates:', sortedDates);
+        
+        const prices = sortedDates.map(date => parseFloat(history[date]));
+        console.log('Prices:', prices);
+        
+        // 格式化日期显示
+        const formattedDates = sortedDates.map(date => {
+          const d = new Date(date);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        });
+        console.log('Formatted dates:', formattedDates);
 
-      const option = {
-        tooltip: {
-          trigger: 'axis',
-          formatter: function(params) {
-            const data = params[0]
-            return `日期：${data.name}<br/>价格：¥${data.value}`
-          }
-        },
-        grid: {
-          top: 30,
-          bottom: 60,
-          left: 60,
-          right: 30
-        },
-        xAxis: {
-          type: 'category',
-          data: dates,
-          axisLabel: {
-            rotate: 45
-          }
-        },
-        yAxis: {
-          type: 'value',
-          axisLabel: {
-            formatter: '¥{value}'
-          }
-        },
-        series: [{
-          data: prices,
-          type: 'line',
-          smooth: true,
-          symbolSize: 8,
-          symbol: 'circle',
-          lineStyle: {
-            color: '#3f5bad'
-          },
-          itemStyle: {
-            color: '#3f5bad'
-          },
-          emphasis: {
-            itemStyle: {
-              borderWidth: 2,
-              borderColor: '#3f5bad',
-              color: '#fff'
-            },
-            label: {
-              show: true,
-              formatter: function(params) {
-                return `¥${params.value}`
-              },
-              backgroundColor: '#3f5bad',
-              color: '#fff',
-              padding: [4, 8],
-              borderRadius: 4
+        const option = {
+          tooltip: {
+            trigger: 'axis',
+            formatter: function(params) {
+              const data = params[0];
+              return `时间：${data.name}<br/>价格：¥${data.value.toFixed(2)}`;
             }
-          }
-        }]
-      }
+          },
+          grid: {
+            top: 30,
+            bottom: 60,
+            left: 60,
+            right: 30
+          },
+          xAxis: {
+            type: 'category',
+            data: formattedDates,
+            axisLabel: {
+              rotate: 45,
+              interval: 0,  // 显示所有标签
+              fontSize: 10
+            }
+          },
+          yAxis: {
+            type: 'value',
+            axisLabel: {
+              formatter: '¥{value}'
+            },
+            scale: true  // 使用优化的刻度
+          },
+          series: [{
+            data: prices,
+            type: 'line',
+            smooth: true,
+            symbolSize: 8,
+            symbol: 'circle',
+            lineStyle: {
+              color: '#3f5bad',
+              width: 2
+            },
+            itemStyle: {
+              color: '#3f5bad'
+            },
+            emphasis: {
+              itemStyle: {
+                borderWidth: 2,
+                borderColor: '#3f5bad',
+                color: '#fff'
+              },
+              label: {
+                show: true,
+                formatter: '{c}',
+                backgroundColor: '#3f5bad',
+                color: '#fff',
+                padding: [4, 8],
+                borderRadius: 4
+              }
+            }
+          }]
+        };
 
-      this.chart.setOption(option)
+        console.log('Chart option:', option);
+        this.chart.setOption(option);
+      } catch (error) {
+        console.error('Error updating chart:', error);
+      }
     }
   },
   beforeUnmount() {

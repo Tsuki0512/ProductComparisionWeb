@@ -70,22 +70,30 @@ public class ProductController {
                         JSONObject item = jdProducts.getJSONObject(i);
                         String barcode = item.getString("barcode");
                         String key = barcode + "_京东";
-                        
-                        // 如果已经添加过这个商品，跳过
-                        if (addedBarcodes.contains(key)) {
-                            continue;
-                        }
-                        
+
                         // 检查商品是否已存在
+                        System.out.println("Searching for product with barcode: " + barcode + ", platform: 京东");
                         product existingProduct = productMapper.findByBarcodeAndPlatform(barcode, "京东");
+                        if (existingProduct == null) {
+                            System.out.println("No existing product found in database");
+                        } else {
+                            System.out.println("Found product: pid=" + existingProduct.getPid() + 
+                                ", barcode=" + existingProduct.getBarcode() + 
+                                ", platform=" + existingProduct.getPlatform());
+                        }
                         if (existingProduct != null) {
+                            System.out.println("Found existing product in database, pid: " + existingProduct.getPid());
+                            System.out.println("Original historical prices: " + existingProduct.getHistorical_prices());
                             // 更新现有商品
                             existingProduct.setProductname(item.getString("productname"));
                             existingProduct.setCurrent_price(item.getDouble("current_price"));
                             existingProduct.setImage_url(item.getString("image_url"));
                             existingProduct.setSpecification(item.getString("link"));
-                            existingProduct.setHistorical_prices(item.getString("historical_prices"));
-                            productMapper.updateProduct(existingProduct);
+                            updateProductHistoricalPrices(existingProduct, item.getDouble("current_price"));
+                            System.out.println("Updated product historical prices: " + existingProduct.getHistorical_prices());
+                            
+                            int updateResult = productMapper.updateProduct(existingProduct);
+                            System.out.println("Update result: " + (updateResult > 0 ? "success" : "failed"));
                             
                             if (uid != null) {
                                 existingProduct.setIsTracked(trackedProductIds.contains(existingProduct.getPid()));
@@ -101,7 +109,7 @@ public class ProductController {
                             newProduct.setImage_url(item.getString("image_url"));
                             newProduct.setBarcode(barcode);
                             newProduct.setSpecification(item.getString("link"));
-                            newProduct.setHistorical_prices(item.getString("historical_prices"));
+                            updateProductHistoricalPrices(newProduct, item.getDouble("current_price"));
                             
                             productMapper.insertProduct(newProduct);
                             
@@ -126,11 +134,6 @@ public class ProductController {
                     String barcode = item.getString("id");
                     String key = barcode + "_淘宝";
                     
-                    // 如果已经添加过这个商品，跳过
-                    if (addedBarcodes.contains(key)) {
-                        continue;
-                    }
-                    
                     // 检查商品是否已存在
                     product existingProduct = productMapper.findByBarcodeAndPlatform(barcode, "淘宝");
                     if (existingProduct != null) {
@@ -139,10 +142,7 @@ public class ProductController {
                         existingProduct.setCurrent_price(Double.parseDouble(item.getString("price")));
                         existingProduct.setImage_url(item.getString("imageURL"));
                         existingProduct.setSpecification(item.getString("link"));
-                        existingProduct.setHistorical_prices(
-                            String.format("{\"current\": \"%s\", \"original\": \"%s\"}", 
-                            item.getString("price"), item.getString("price"))
-                        );
+                        updateProductHistoricalPrices(existingProduct, Double.parseDouble(item.getString("price")));
                         productMapper.updateProduct(existingProduct);
                         
                         if (uid != null) {
@@ -159,10 +159,7 @@ public class ProductController {
                         newProduct.setImage_url(item.getString("imageURL"));
                         newProduct.setBarcode(barcode);
                         newProduct.setSpecification(item.getString("link"));
-                        newProduct.setHistorical_prices(
-                            String.format("{\"current\": \"%s\", \"original\": \"%s\"}", 
-                            item.getString("price"), item.getString("price"))
-                        );
+                        updateProductHistoricalPrices(newProduct, Double.parseDouble(item.getString("price")));
                         
                         productMapper.insertProduct(newProduct);
                         
@@ -179,6 +176,59 @@ public class ProductController {
         } catch (Exception e) {
             e.printStackTrace();
             return Result.error("搜索失败：" + e.getMessage());
+        }
+    }
+
+    private void updateProductHistoricalPrices(product existingProduct, double newPrice) {
+        try {
+            String currentTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+                .format(new java.util.Date());
+            JSONObject history;
+            
+            System.out.println("Updating historical prices for product: " + existingProduct.getPid());
+            System.out.println("Current price to add: " + newPrice);
+            
+            // 解析现有的历史价格数据
+            if (existingProduct.getHistorical_prices() != null && !existingProduct.getHistorical_prices().isEmpty()) {
+                System.out.println("Found existing historical prices");
+                history = new JSONObject(existingProduct.getHistorical_prices());
+            } else {
+                System.out.println("No existing historical prices, creating new");
+                history = new JSONObject();
+            }
+            
+            System.out.println("Current historical prices before update: " + history.toString());
+            
+            // 直接添加新的价格记录
+            history.put(currentTime, String.format("%.2f", newPrice));
+            existingProduct.setHistorical_prices(history.toString());
+            System.out.println("Updated historical prices after update: " + history.toString());
+
+        } catch (Exception e) {
+            System.out.println("Error updating historical prices: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @GetMapping("/test/find")
+    public Result testFind(@RequestParam String barcode, @RequestParam String platform) {
+        try {
+            System.out.println("Testing findByBarcodeAndPlatform");
+            System.out.println("Barcode: " + barcode);
+            System.out.println("Platform: " + platform);
+            
+            product result = productMapper.findByBarcodeAndPlatform(barcode, platform);
+            
+            if (result != null) {
+                System.out.println("Found product: " + result.toString());
+                return Result.success(result);
+            } else {
+                System.out.println("No product found");
+                return Result.error("No product found");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("Error: " + e.getMessage());
         }
     }
 }
