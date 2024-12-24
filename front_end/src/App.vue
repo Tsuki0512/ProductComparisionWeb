@@ -71,6 +71,9 @@ export default {
         localStorage.setItem('uid', user.uid);
         console.log('Current uid:', user.uid);
 
+        // 更新用户收藏的商品信息
+        this.updateTrackedProducts(user);
+
         // 使用 Element Plus 的消息提示
         this.$message({
           message: '登录成功',
@@ -90,6 +93,34 @@ export default {
           type: 'error',
           duration: 2000
         });
+      }
+    },
+    async updateTrackedProducts(user) {
+      try {
+        // 获取用户收藏的商品
+        const trackedResponse = await this.$axios.get(`/tracking/details?uid=${user.uid}`);
+        if (trackedResponse.data.code === 200) {
+          const trackedProducts = trackedResponse.data.data;
+          
+          // 对每个收藏的商品进行更新
+          for (const product of trackedProducts) {
+            // 根据平台和商品名称搜索最新信息
+            const searchResponse = await this.$axios.get('/product/search', {
+              params: {
+                keyword: product.productname,
+                jdCookie: product.platform === '京东' ? user.jd_cookie : null,
+                tbCookie: product.platform === '淘宝' ? user.tb_cookie : null,
+                platform: product.platform === '京东' ? 'jd' : 'tb',
+                uid: user.uid
+              }
+            });
+            
+            console.log(`Updated tracked product: ${product.productname} from ${product.platform}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error updating tracked products:', error);
+        // 不影响正常登录，所以这里只记录错误
       }
     }
   }

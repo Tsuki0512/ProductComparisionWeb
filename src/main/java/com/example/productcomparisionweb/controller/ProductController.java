@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true")
@@ -34,8 +36,8 @@ public class ProductController {
                         @RequestParam(required = false) String platform,
                         @RequestParam(required = false) Integer uid) {
         try {
-            // 使用 Set 来存储商品，避免重复
-            Set<String> addedBarcodes = new HashSet<>();
+            // 使用 Map 来存储最新的商品信息，key 为 pid
+            Map<Integer, product> productMap = new HashMap<>();
             List<product> allProducts = new ArrayList<>();
             
             // 如果用户已登录，获取该用户收藏的所有商品ID
@@ -48,18 +50,12 @@ public class ProductController {
             List<product> dbProducts = productMapper.searchByKeyword(keyword, 
                 platform != null && !platform.equals("all") ? platform.equals("jd") ? "京东" : "淘宝" : null);
             
-            // 如果提供了uid，检查每个商品是否被收藏
-            if (uid != null) {
-                for (product p : dbProducts) {
-                    boolean isTracked = trackedProductIds.contains(p.getPid());
-                    p.setIsTracked(isTracked);
-                    addedBarcodes.add(p.getBarcode() + "_" + p.getPlatform());
-                }
+            // 将数据库中的商品添加到 Map
+            for (product p : dbProducts) {
+                productMap.put(p.getPid(), p);
             }
-            
-            allProducts.addAll(dbProducts);
 
-            // 2. 从电商平台搜索新商品
+            // 2. 从电商平台搜索并更新
             if ((platform == null || platform.equals("all") || platform.equals("jd")) && jdCookie != null) {
                 JDSpider jdSpider = new JDSpider(jdCookie);
                 JSONObject jdResult = jdSpider.requestSearch(keyword, jdCookie, 0, 30);
@@ -98,8 +94,7 @@ public class ProductController {
                             if (uid != null) {
                                 existingProduct.setIsTracked(trackedProductIds.contains(existingProduct.getPid()));
                             }
-                            allProducts.add(existingProduct);
-                            addedBarcodes.add(key);
+                            productMap.put(existingProduct.getPid(), existingProduct);
                         } else {
                             // 创建新商品
                             product newProduct = new product();
@@ -116,8 +111,7 @@ public class ProductController {
                             if (uid != null) {
                                 newProduct.setIsTracked(trackedProductIds.contains(newProduct.getPid()));
                             }
-                            allProducts.add(newProduct);
-                            addedBarcodes.add(key);
+                            productMap.put(newProduct.getPid(), newProduct);
                         }
                     }
                 }
@@ -148,8 +142,7 @@ public class ProductController {
                         if (uid != null) {
                             existingProduct.setIsTracked(trackedProductIds.contains(existingProduct.getPid()));
                         }
-                        allProducts.add(existingProduct);
-                        addedBarcodes.add(key);
+                        productMap.put(existingProduct.getPid(), existingProduct);
                     } else {
                         // 创建新商品
                         product newProduct = new product();
@@ -166,11 +159,13 @@ public class ProductController {
                         if (uid != null) {
                             newProduct.setIsTracked(trackedProductIds.contains(newProduct.getPid()));
                         }
-                        allProducts.add(newProduct);
-                        addedBarcodes.add(key);
+                        productMap.put(newProduct.getPid(), newProduct);
                     }
                 }
             }
+            
+            // 最后将 Map 中的所有商品转换为列表返回
+            allProducts = new ArrayList<>(productMap.values());
             
             return Result.success(allProducts);
         } catch (Exception e) {
@@ -199,10 +194,51 @@ public class ProductController {
             
             System.out.println("Current historical prices before update: " + history.toString());
             
-            // 直接添加新的价格记录
-            history.put(currentTime, String.format("%.2f", newPrice));
-            existingProduct.setHistorical_prices(history.toString());
-            System.out.println("Updated historical prices after update: " + history.toString());
+            // 判断是否需要更新价格历史
+            boolean shouldUpdate = false;
+            
+            if (history.isEmpty()) {
+                // 如果是第一次记录，直接添加
+                shouldUpdate = true;
+            } else {
+                // 获取最近一次的价格记录
+                String lastTime = null;
+                double lastPrice = 0;
+                
+                // 找到最近的时间记录
+                for (String time : history.keySet()) {
+                    if (lastTime == null || time.compareTo(lastTime) > 0) {
+                        lastTime = time;
+                        lastPrice = Double.parseDouble(history.getString(time));
+                    }
+                }
+                
+                // 检查价格是否变化
+                if (Math.abs(lastPrice - newPrice) > 0.01) {
+                    shouldUpdate = true;
+                    System.out.println("Price changed from " + lastPrice + " to " + newPrice);
+                } else {
+                    // 检查时间间隔是否超过3天
+                    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    java.util.Date lastDate = sdf.parse(lastTime);
+                    java.util.Date currentDate = new java.util.Date();
+                    long diffInDays = (currentDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
+                    
+                    if (diffInDays >= 3) {
+                        shouldUpdate = true;
+                        System.out.println("Time interval exceeded 3 days: " + diffInDays + " days");
+                    }
+                }
+            }
+            
+            // 只在需要更新时添加新的价格记录
+            if (shouldUpdate) {
+                history.put(currentTime, String.format("%.2f", newPrice));
+                existingProduct.setHistorical_prices(history.toString());
+                System.out.println("Updated historical prices after update: " + history.toString());
+            } else {
+                System.out.println("No update needed: price unchanged and within 3 days");
+            }
 
         } catch (Exception e) {
             System.out.println("Error updating historical prices: " + e.getMessage());
