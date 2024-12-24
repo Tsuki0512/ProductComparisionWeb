@@ -172,6 +172,9 @@
             prop="price"
             width="150"
             align="center">
+            <template #default="scope">
+              ¥{{ scope.row.current_price.toFixed(2) }}
+            </template>
           </el-table-column>
           <el-table-column 
             prop="platform" 

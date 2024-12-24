@@ -18,6 +18,7 @@ public class product {
     private String barcode;
     private String image_url;
     private String historical_prices;
+    private boolean isTracked;
 
     @Override
     public String toString() {
@@ -104,5 +105,13 @@ public class product {
 
     public void setHistorical_prices(String historical_prices) {
         this.historical_prices = historical_prices;
+    }
+
+    public boolean getIsTracked() {
+        return isTracked;
+    }
+
+    public void setIsTracked(boolean isTracked) {
+        this.isTracked = isTracked;
     }
 }

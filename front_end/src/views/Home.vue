@@ -77,16 +77,18 @@
           align="center">
         </el-table-column>
         <el-table-column 
-          prop="name" 
+          prop="productname" 
           label="商品名称" 
           min-width="200" 
           align="center">
         </el-table-column>
         <el-table-column 
-          prop="price" 
           label="价格" 
           min-width="120" 
           align="center">
+          <template #default="scope">
+            ¥{{ scope.row.current_price.toFixed(2) }}
+          </template>
         </el-table-column>
         <el-table-column 
           prop="platform" 
@@ -141,17 +143,14 @@ export default {
       showProductDetail: false,
       currentProduct: null,
       selectedPlatform: 'all',
-      starredProducts: new Set(),
+      starredProducts: [],
       uid: localStorage.getItem('uid')
     }
   },
   created() {
-    if (!this.uid) {
-      console.error('用户未登录或 uid 未保存');
-      return;
+    if (this.uid) {
+      this.loadStarredProducts();
     }
-    console.log('Current uid:', this.uid);
-    this.loadStarredProducts();
   },
   mounted() {
     if (!this.isLoggedIn) {
@@ -166,87 +165,85 @@ export default {
         this.$message.warning('请输入搜索关键词');
         return;
       }
-
+      
       try {
-        console.log('开始搜索:', this.searchQuery);
+        const response = await this.$axios.get('/product/search', {
+          params: {
+            keyword: this.searchQuery,
+            jdCookie: localStorage.getItem('jdCookie'),
+            tbCookie: localStorage.getItem('tbCookie'),
+            platform: this.selectedPlatform,
+            uid: this.uid
+          }
+        });
         
-        const params = {
-          keyword: this.searchQuery
-        };
-
-        if (this.selectedPlatform === 'all' || this.selectedPlatform === 'jd') {
-          const jdCookie = localStorage.getItem('jdCookie');
-          console.log('jdCookie:', jdCookie);
-          if (!jdCookie) {
-            this.$message.error('请在个人主页设置京东 Cookie');
-            return;
-          }
-          params.jdCookie = jdCookie;
-        }
-        if (this.selectedPlatform === 'all' || this.selectedPlatform === 'tb') {
-          const tbCookie = localStorage.getItem('tbCookie');
-          console.log('tbCookie:', tbCookie);
-          if (!tbCookie) {
-            this.$message.error('请在个人主页设置淘宝 Cookie');
-            return;
-          }
-          params.tbCookie = tbCookie;
-        }
-
-        console.log('发送请求参数:', params);
-        
-        const response = await this.$axios.get('/product/search', { params });
-        console.log('搜索响应:', response.data);
-        
-        if (response.data.code === '200' || response.data.code === 200) {
-          const products = response.data.data;
-          if (!Array.isArray(products)) {
-            console.error('返回的数据不是数组:', products);
-            this.$message.error('数据格式错误');
-            return;
-          }
-
-          this.products = products.map(item => ({
-            name: item.productname,
-            price: `¥${item.current_price}`,
-            platform: item.platform,
-            barcode: item.barcode,
-            image: item.image_url,
-            spec: item.specification || '',
-            link: item.specification,
-            pid: item.pid,
-            variants: [
-              { 
-                id: 1, 
-                name: item.specification || '默认规格', 
-                price: item.current_price.toString() 
-              }
-            ],
-            priceHistory: [
-              {
-                date: new Date().toISOString().split('T')[0],
-                price: item.current_price,
-                variant: item.specification || '默认规格'
-              }
-            ]
-          }));
-
-          if (this.products.length === 0) {
-            this.$message.info('未找到相关商品');
-          } else {
-            console.log('处理后商品数据:', this.products);
-            this.$message.success(`找到 ${this.products.length} 个商品`);
-          }
-        } else {
-          this.$message.error(response.data.msg || '搜索失败');
+        if (response.data.code === 200) {
+          this.products = response.data.data;
+          this.products.forEach(product => {
+            product.isTracked = this.isProductStarred(product);
+          });
         }
       } catch (error) {
-        console.error('搜索错误:', error);
-        this.$message.error('搜索失败：' + (error.response?.data?.msg || error.message));
+        console.error('搜索失败:', error);
+        this.$message.error('搜索失败，请稍后再试');
       }
     },
     handleDetail(row) {
-      this.currentProduct = row;
+      this.currentProduct = {
+        name: row.productname,
+        price: row.current_price,
+        image: row.image_url,
+        spec: row.specification || '',
+        link: row.specification,
+        pid: row.pid,
+        platform: row.platform,
+        barcode: row.barcode,
+        productname: row.productname,
+        current_price: row.current_price,
+        image_url: row.image_url,
+        variants: [
+          {
+            id: 1,
+            name: row.specification || '默认规格',
+            price: row.current_price.toString()
+          }
+        ],
+        priceHistory: [
+          {
+            date: new Date().toISOString().split('T')[0],
+            price: row.current_price,
+            variant: '默认规格'
+          }
+        ]
+      };
+
+      if (row.historical_prices) {
+        try {
+          const history = typeof row.historical_prices === 'string' 
+            ? JSON.parse(row.historical_prices) 
+            : row.historical_prices;
+          
+          if (history.current) {
+            this.currentProduct.priceHistory.push({
+              date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+              price: parseFloat(history.current),
+              variant: '默认规格'
+            });
+          }
+          if (history.original && history.original !== history.current) {
+            this.currentProduct.priceHistory.push({
+              date: new Date(Date.now() - 86400000 * 7).toISOString().split('T')[0],
+              price: parseFloat(history.original),
+              variant: '默认规格'
+            });
+          }
+        } catch (e) {
+          console.error('解析价格历史失败:', e);
+        }
+      }
+
+      this.currentProduct.priceHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
+      console.log('Price history:', this.currentProduct.priceHistory);
       this.showProductDetail = true;
     },
     handleProfile() {
@@ -257,34 +254,36 @@ export default {
     },
     isProductStarred(product) {
       if (!product) return false;
-      const productKey = `${product.barcode}-${product.platform}`;
-      return this.starredProducts.has(productKey);
+      return product.isTracked || this.starredProducts.includes(product.pid);
     },
     async handleToggleStar(product) {
+      if (!product) return;
       if (!this.uid) {
         this.$message.warning('请先登录');
-        this.$router.push('/login');
         return;
       }
       try {
         const isStarred = this.isProductStarred(product);
-        console.log('Toggling star for product:', product.pid, 'User:', this.uid);
         const response = await this.$axios.post('/tracking/toggle', {
           uid: parseInt(this.uid),
-          pid: parseInt(product.pid),
+          pid: product.pid,
           track: !isStarred
         });
+        
         if (response.data.code === 200) {
           if (!isStarred) {
-            this.starredProducts.add(`${product.barcode}-${product.platform}`);
+            this.starredProducts.push(product.pid);
+            product.isTracked = true;
+            this.$message.success('收藏成功');
           } else {
-            this.starredProducts.delete(`${product.barcode}-${product.platform}`);
+            this.starredProducts = this.starredProducts.filter(id => id !== product.pid);
+            product.isTracked = false;
+            this.$message.success('已取消收藏');
           }
-          this.$forceUpdate();
         }
       } catch (error) {
-        console.error('操作失败:', error);
-        this.$message.error('操作失败：' + (error.response?.data?.msg || error.message));
+        console.error('收藏操作失败:', error);
+        this.$message.error('操作失败，请稍后再试');
       }
     },
     async loadStarredProducts() {
@@ -293,7 +292,7 @@ export default {
           params: { uid: this.uid }
         });
         if (response.data.code === 200) {
-          this.starredProducts = new Set(response.data.data);
+          this.starredProducts = response.data.data;
         }
       } catch (error) {
         console.error('加载收藏商品失败:', error);
