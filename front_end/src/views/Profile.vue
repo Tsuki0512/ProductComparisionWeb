@@ -152,9 +152,9 @@
         </div>
         <div class="divider"></div>
       </div>
-      <div class="watched-products">关注的商品：</div>
+      <div class="watched-products">收藏的商品：</div>
       <div class="products-table">
-        <el-table :data="watchedProducts" style="width: 100%" :fit="true">
+        <el-table :data="trackedProducts" style="width: 100%" :fit="true" v-loading="loading">
           <el-table-column 
             type="index" 
             label="序号" 
@@ -162,15 +162,21 @@
             align="center">
           </el-table-column>
           <el-table-column 
-            prop="name" 
+            prop="productname" 
             label="商品名称" 
             width="300" 
             align="center">
           </el-table-column>
           <el-table-column 
-            prop="price" 
-            label="价格" 
-            width="150" 
+            label="价格"
+            prop="price"
+            width="150"
+            align="center">
+          </el-table-column>
+          <el-table-column 
+            prop="platform" 
+            label="平台" 
+            width="120" 
             align="center">
           </el-table-column>
           <el-table-column 
@@ -182,16 +188,16 @@
                 <el-button
                   size="small"
                   type="primary"
-                  @click="handleDetail(scope.row)"
+                  @click="viewDetail(scope.row)"
                 >
                   详细信息
                 </el-button>
                 <el-button
                   size="small"
                   type="danger"
-                  @click="handleUnwatch(scope.row)"
+                  @click="untrackProduct(scope.row)"
                 >
-                  取消关注
+                  取消收藏
                 </el-button>
               </div>
             </template>
@@ -200,8 +206,11 @@
       </div>
     </div>
     <ProductDetail 
+      v-if="selectedProduct"
       v-model:visible="showProductDetail"
-      :product="currentProduct"
+      :product="selectedProduct"
+      :isStarred="true"
+      @toggle-star="handleToggleStar"
     />
   </div>
 </template>
@@ -228,34 +237,14 @@ export default {
       editEmail: '',
       originalUsername: '',
       originalEmail: '',
-      watchedProducts: [
-        {
-          name: 'iPhone 15 Pro',
-          price: '¥7999',
-          detail: {
-            color: '自然钛色',
-            storage: '256GB',
-            delivery: '次日达',
-            seller: '京东自营'
-          }
-        },
-        {
-          name: 'MacBook Air M2',
-          price: '¥9299',
-          detail: {
-            color: '深空灰色',
-            storage: '512GB',
-            delivery: '2日内发货',
-            seller: 'Apple官方旗舰店'
-          }
-        }
-      ],
       showProductDetail: false,
-      currentProduct: null,
       editJDCookie: '',
       editTBCookie: '',
       originalJDCookie: '',
-      originalTBCookie: ''
+      originalTBCookie: '',
+      trackedProducts: [],
+      loading: false,
+      selectedProduct: null
     }
   },
   computed: {
@@ -313,21 +302,35 @@ export default {
     handleBack() {
       this.$router.push('/home');
     },
-    handleDetail(row) {
-      this.currentProduct = row;
+    viewDetail(product) {
+      this.selectedProduct = {
+        name: product.productname,
+        price: product.current_price,
+        image: product.image_url,
+        spec: product.specification || '',
+        link: product.specification,
+        pid: product.pid,
+        platform: product.platform,
+        barcode: product.barcode,
+        variants: [
+          {
+            id: 1,
+            name: product.specification || '默认规格',
+            price: product.current_price.toString()
+          }
+        ],
+        priceHistory: Array.isArray(product.historical_prices) 
+          ? product.historical_prices 
+          : [
+              {
+                date: new Date().toISOString().split('T')[0],
+                price: product.current_price,
+                variant: product.specification || '默认规格'
+              }
+            ]
+      };
+      console.log('Selected product for detail:', this.selectedProduct);
       this.showProductDetail = true;
-    },
-    handleUnwatch(row) {
-      this.$confirm('确定取消关注该商品吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        // 里添加取消关注的逻辑
-        this.$message.success('已取消关注');
-      }).catch(() => {
-        this.$message.info('已取消操作');
-      });
     },
     startEditUsername() {
       this.editUsername = this.username;
@@ -472,6 +475,71 @@ export default {
           email: email
         }
       });
+    },
+    async loadTrackedProducts() {
+      this.loading = true;
+      try {
+        const uid = localStorage.getItem('uid');
+        const response = await this.$axios.get('/tracking/details', {
+          params: { uid }
+        });
+        if (response.data.code === 200) {
+          this.trackedProducts = response.data.data.map(product => {
+            const price = parseFloat(product.current_price) || 0;
+            
+            let historicalPrices;
+            try {
+              historicalPrices = product.historical_prices ? JSON.parse(product.historical_prices) : null;
+            } catch (e) {
+              historicalPrices = null;
+            }
+            
+            return {
+              pid: product.pid,
+              productname: product.productname,
+              platform: product.platform,
+              current_price: price,
+              price: `¥${price.toFixed(2)}`,
+              specification: product.specification,
+              barcode: product.barcode,
+              image_url: product.image_url,
+              historical_prices: historicalPrices || [
+                {
+                  date: new Date().toISOString().split('T')[0],
+                  price: price,
+                  variant: '默认规格'
+                }
+              ]
+            };
+          });
+          console.log('Processed tracked products:', this.trackedProducts);
+        }
+      } catch (error) {
+        console.error('加载收藏商品失败:', error);
+        this.$message.error('加载收藏商品失败');
+      } finally {
+        this.loading = false;
+      }
+    },
+    async untrackProduct(product) {
+      try {
+        const uid = localStorage.getItem('uid')
+        const response = await this.$axios.post('/tracking/toggle', {
+          uid: parseInt(uid),
+          pid: product.pid,
+          track: false
+        })
+        if (response.data.code === 200) {
+          this.$message.success('取消收藏成功')
+          await this.loadTrackedProducts()
+        }
+      } catch (error) {
+        console.error('取消收藏失败:', error)
+        this.$message.error('取消收藏失败')
+      }
+    },
+    handleToggleStar(product) {
+      this.untrackProduct(product)
     }
   },
   created() {
@@ -487,6 +555,7 @@ export default {
       jdCookie: this.jdCookie,
       tbCookie: this.tbCookie
     });
+    this.loadTrackedProducts()
   }
 }
 </script>
@@ -769,8 +838,8 @@ export default {
 }
 
 .products-table {
-  margin: 20px 100px;
-  width: calc(100% - 200px);
+  margin: 20px 50px;
+  width: calc(100% - 100px);
 }
 
 .button-container {
@@ -881,5 +950,18 @@ export default {
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s;
+}
+
+.tracked-products {
+  margin-top: 20px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,0.1);
+}
+
+.tracked-products h3 {
+  margin-bottom: 20px;
+  color: #3f5bad;
 }
 </style>

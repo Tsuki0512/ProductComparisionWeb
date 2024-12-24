@@ -21,8 +21,18 @@ public interface PriceTrackingMapper {
     @Select("SELECT COUNT(*) FROM price_tracking WHERE uid = #{uid} AND pid = #{pid}")
     int isProductTracked(@Param("uid") Integer uid, @Param("pid") Integer pid);
     
-    @Select("SELECT p.* FROM product p " +
-            "JOIN price_tracking pt ON p.pid = pt.pid " +
-            "WHERE pt.uid = #{uid}")
+    @Results({
+        @Result(property = "pid", column = "pid"),
+        @Result(property = "productname", column = "productname"),
+        @Result(property = "platform", column = "platform"),
+        @Result(property = "current_price", column = "current_price"),
+        @Result(property = "image_url", column = "image_url"),
+        @Result(property = "barcode", column = "barcode"),
+        @Result(property = "specification", column = "specification"),
+        @Result(property = "historical_prices", column = "historical_prices")
+    })
+    @Select("SELECT DISTINCT p.* FROM product p " +
+            "INNER JOIN price_tracking pt ON p.pid = pt.pid " +
+            "WHERE pt.uid = #{uid} AND p.current_price IS NOT NULL")
     List<product> getTrackedProductDetails(@Param("uid") Integer uid);
 } 
