@@ -274,7 +274,7 @@ export default {
     },
     handleDelete() {
       this.$confirm('确定要注销账号吗？此操作不可恢复！', '警告', {
-        confirmButtonText: '确定注���',
+        confirmButtonText: '确定注销',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(async () => {

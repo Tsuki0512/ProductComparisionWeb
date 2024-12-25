@@ -114,41 +114,61 @@ export default {
       this.updateChart()
     },
     updateChart() {
-      if (!this.chart || !this.product?.historical_prices) return;
+      if (!this.chart || !this.product?.historical_prices) {
+        console.log('Missing chart or historical prices');
+        return;
+      }
 
       console.log('Raw historical prices:', this.product.historical_prices);
       
       try {
         // 解析历史价格数据
-        const history = typeof this.product.historical_prices === 'string' 
-          ? JSON.parse(this.product.historical_prices) 
-          : this.product.historical_prices;
+        let history;
+        try {
+          history = typeof this.product.historical_prices === 'string' 
+            ? JSON.parse(this.product.historical_prices) 
+            : this.product.historical_prices;
+        } catch (e) {
+          console.error('Error parsing historical prices:', e);
+          return;
+        }
+        
         console.log('Parsed history:', history);
         
         // 按时间排序
         const sortedDates = Object.keys(history).sort((a, b) => {
-          const dateA = new Date(a);
-          const dateB = new Date(b);
-          return dateA - dateB;
+          return new Date(a).getTime() - new Date(b).getTime();
         });
         console.log('Sorted dates:', sortedDates);
         
-        const prices = sortedDates.map(date => parseFloat(history[date]));
+        const prices = sortedDates.map(date => {
+          const price = parseFloat(history[date]);
+          return isNaN(price) ? null : price;
+        }).filter(price => price !== null);
         console.log('Prices:', prices);
         
         // 格式化日期显示
         const formattedDates = sortedDates.map(date => {
           const d = new Date(date);
+          if (isNaN(d.getTime())) {
+            console.error('Invalid date:', date);
+            return null;
+          }
           return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        });
+        }).filter(date => date !== null);
         console.log('Formatted dates:', formattedDates);
+
+        if (prices.length === 0 || formattedDates.length === 0) {
+          console.error('No valid price data found');
+          return;
+        }
 
         const option = {
           tooltip: {
             trigger: 'axis',
             formatter: function(params) {
               const data = params[0];
-              return `时间：${data.name}<br/>价格：¥${data.value.toFixed(2)}`;
+              return `时间：${data.name}<br/>价格：¥${data.value ? data.value.toFixed(2) : '暂无数据'}`;
             }
           },
           grid: {
@@ -162,7 +182,7 @@ export default {
             data: formattedDates,
             axisLabel: {
               rotate: 45,
-              interval: 0,  // 显示所有标签
+              interval: 0,
               fontSize: 10
             }
           },
@@ -171,7 +191,13 @@ export default {
             axisLabel: {
               formatter: '¥{value}'
             },
-            scale: true  // 使用优化的刻度
+            scale: true,
+            min: function(value) {
+              return Math.floor(value.min * 0.95);
+            },
+            max: function(value) {
+              return Math.ceil(value.max * 1.05);
+            }
           },
           series: [{
             data: prices,
@@ -186,6 +212,7 @@ export default {
             itemStyle: {
               color: '#3f5bad'
             },
+            connectNulls: true,
             emphasis: {
               itemStyle: {
                 borderWidth: 2,
@@ -194,7 +221,9 @@ export default {
               },
               label: {
                 show: true,
-                formatter: '{c}',
+                formatter: function(params) {
+                  return params.value ? `¥${params.value.toFixed(2)}` : '暂无数据';
+                },
                 backgroundColor: '#3f5bad',
                 color: '#fff',
                 padding: [4, 8],
@@ -208,6 +237,7 @@ export default {
         this.chart.setOption(option);
       } catch (error) {
         console.error('Error updating chart:', error);
+        console.error('Error details:', error.stack);
       }
     }
   },
