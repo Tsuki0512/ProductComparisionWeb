@@ -76,7 +76,7 @@ export default {
 
         // 使用 Element Plus 的消息提示
         this.$message({
-          message: '登录成功',
+          message: 'Login Success',
           type: 'success',
           duration: 2000
         });
@@ -89,7 +89,7 @@ export default {
         
         // 使用 Element Plus 的消息提示
         this.$message({
-          message: '用户名或密码错误',
+          message: 'Error username or password',
           type: 'error',
           duration: 2000
         });

@@ -1,5 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import Home from '../views/Home.vue'
 import Profile from '../views/Profile.vue'
@@ -7,11 +6,6 @@ import ResetPassword from '../views/ResetPassword.vue'
 
 // 定义路由组件
 const routes = [
-  {
-    path: '/',
-    name: 'Login',
-    component: LoginView
-  },
   {
     path: '/register',
     name: 'Register',

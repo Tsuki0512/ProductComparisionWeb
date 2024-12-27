@@ -19,7 +19,8 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
-
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 @RestController
 @CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true")
 @RequestMapping("/product")
@@ -181,7 +182,18 @@ public class ProductController {
             return Result.error("搜索失败：" + e.getMessage());
         }
     }
+    private static String preprocessTimeString(String time) {
+        String[] parts = time.split(" ");
+        String[] dateParts = parts[0].split("-");
 
+        // 补零：年份-月份-日期
+        String year = dateParts[0];
+        String month = dateParts[1].length() == 1 ? "0" + dateParts[1] : dateParts[1];
+        String day = dateParts[2].length() == 1 ? "0" + dateParts[2] : dateParts[2];
+
+        // 拼接时间部分
+        return year + "-" + month + "-" + day + " " + parts[1];
+    }
     private void updateProductHistoricalPrices(product existingProduct, double newPrice) {
         try {
             String currentTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
@@ -214,8 +226,15 @@ public class ProductController {
                 
                 // 找到最近的时间记录
                 for (String time : history.keySet()) {
-                    if (lastTime == null || time.compareTo(lastTime) > 0) {
-                        lastTime = time;
+                    System.out.println("[Test]Current time: " + time + ", last time: " + lastTime);
+                    // 将时间字符串解析为 LocalDateTime
+                    String processedTime = preprocessTimeString(time);
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    LocalDateTime curTime = LocalDateTime.parse(processedTime, formatter);
+                    LocalDateTime lastDateTime = lastTime == null ? null : LocalDateTime.parse(lastTime, formatter);
+
+                    if (lastDateTime == null || curTime.isAfter(lastDateTime)) {
+                        lastTime = processedTime;
                         lastPrice = Double.parseDouble(history.getString(time));
                     }
                 }
