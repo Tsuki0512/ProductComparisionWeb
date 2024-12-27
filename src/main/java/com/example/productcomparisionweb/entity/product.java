@@ -19,6 +19,7 @@ public class product {
     private String image_url;
     private String historical_prices;
     private boolean isTracked;
+    private Integer trackedCount;
 
     @Override
     public String toString() {
@@ -113,5 +114,13 @@ public class product {
 
     public void setIsTracked(boolean isTracked) {
         this.isTracked = isTracked;
+    }
+
+    public Integer getTrackedCount() {
+        return trackedCount;
+    }
+
+    public void setTrackedCount(Integer trackedCount) {
+        this.trackedCount = trackedCount;
     }
 }

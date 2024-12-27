@@ -153,59 +153,41 @@
         <div class="divider"></div>
       </div>
       <div class="watched-products">收藏的商品：</div>
-      <div class="products-table">
-        <el-table :data="trackedProducts" style="width: 100%" :fit="true" v-loading="loading">
-          <el-table-column 
-            type="index" 
-            label="序号" 
-            width="80" 
-            align="center">
-          </el-table-column>
-          <el-table-column 
-            prop="productname" 
-            label="商品名称" 
-            width="300" 
-            align="center">
-          </el-table-column>
-          <el-table-column 
-            label="价格"
-            prop="price"
-            width="150"
-            align="center">
-            <template #default="scope">
-              ¥{{ scope.row.current_price.toFixed(2) }}
-            </template>
-          </el-table-column>
-          <el-table-column 
-            prop="platform" 
-            label="平台" 
-            width="120" 
-            align="center">
-          </el-table-column>
-          <el-table-column 
-            label="操作" 
-            width="260" 
-            align="center">
-            <template #default="scope">
-              <div class="button-container">
-                <el-button
-                  size="small"
-                  type="primary"
-                  @click="handleDetail(scope.row)"
-                >
-                  详细信息
-                </el-button>
-                <el-button
-                  size="small"
-                  type="danger"
-                  @click="untrackProduct(scope.row)"
-                >
-                  取消收藏
-                </el-button>
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
+      <div class="products-grid" v-loading="loading">
+        <div v-for="product in trackedProducts" 
+             :key="product.pid" 
+             class="product-card">
+          <div class="product-card-header">
+            <div class="tracked-count">
+              <i class="fas fa-user"></i>
+              {{ product.trackedCount || 0 }}
+            </div>
+          </div>
+          <img :src="product.image_url" :alt="product.productname" class="product-image" @click="handleDetail(product)">
+          <div class="product-info">
+            <div class="product-name" @click="handleDetail(product)">{{ product.productname }}</div>
+            <div class="product-price">¥{{ product.current_price.toFixed(2) }}</div>
+            <div class="product-platform">{{ product.platform }}</div>
+            <div class="button-container">
+              <el-button
+                size="small"
+                type="primary"
+                @click="handleDetail(product)"
+                class="detail-button"
+              >
+                详细信息
+              </el-button>
+              <el-button
+                size="small"
+                type="danger"
+                @click="untrackProduct(product)"
+                class="untrack-button"
+              >
+                取消收藏
+              </el-button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <ProductDetail 
@@ -468,42 +450,28 @@ export default {
       });
     },
     async loadTrackedProducts() {
-      this.loading = true;
       try {
+        this.loading = true;
         const uid = localStorage.getItem('uid');
         const response = await this.$axios.get('/tracking/details', {
           params: { uid }
         });
+        
         if (response.data.code === 200) {
-          this.trackedProducts = response.data.data.map(product => {
-            const price = parseFloat(product.current_price) || 0;
-            
-            let historicalPrices;
+          this.trackedProducts = response.data.data;
+          // 获取每个商品的最新关注数
+          for (const product of this.trackedProducts) {
             try {
-              historicalPrices = product.historical_prices ? JSON.parse(product.historical_prices) : null;
-            } catch (e) {
-              historicalPrices = null;
+              const countResponse = await this.$axios.get('/product/tracked-count', {
+                params: { pid: product.pid }
+              });
+              if (countResponse.data.code === 200) {
+                product.trackedCount = countResponse.data.data;
+              }
+            } catch (error) {
+              console.error('获取商品关注数失败:', error);
             }
-            
-            return {
-              pid: product.pid,
-              productname: product.productname,
-              platform: product.platform,
-              current_price: price,
-              price: `¥${price.toFixed(2)}`,
-              specification: product.specification,
-              barcode: product.barcode,
-              image_url: product.image_url,
-              historical_prices: historicalPrices || [
-                {
-                  date: new Date().toISOString().split('T')[0],
-                  price: price,
-                  variant: '默认规格'
-                }
-              ]
-            };
-          });
-          console.log('Processed tracked products:', this.trackedProducts);
+          }
         }
       } catch (error) {
         console.error('加载收藏商品失败:', error);
@@ -828,15 +796,73 @@ export default {
   margin: 30px 0 0 100px;
 }
 
-.products-table {
-  margin: 20px 50px;
-  width: calc(100% - 100px);
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 20px;
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+.product-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.product-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.product-info {
+  padding: 15px;
+}
+
+.product-name {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 10px;
+  height: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  cursor: pointer;
+}
+
+.product-price {
+  color: #f56c6c;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.product-platform {
+  color: #909399;
+  font-size: 12px;
+  margin-bottom: 10px;
 }
 
 .button-container {
   display: flex;
-  justify-content: center;
   gap: 10px;
+}
+
+.detail-button,
+.untrack-button {
+  flex: 1;
 }
 
 /* Element Plus 样式覆盖 */
@@ -1107,60 +1133,32 @@ export default {
     width: calc(100% - 10px);
   }
 
-  .products-table {
-    margin: -8px 0px 0px 0px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    padding: 8px;
-    width: calc(100% - 10px);
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    padding: 10px;
   }
 
-  /* 表格适配 */
-  :deep(.el-table) {
+  .product-card {
+    width: 100%;
+  }
+
+  .product-image {
+    height: 150px;
+  }
+
+  .product-name {
     font-size: 12px;
-    width: 100% !important;
+    height: 32px;
   }
 
-  :deep(.el-table th) {
-    padding: 6px 2px;
-    font-size: 12px;
+  .product-price {
+    font-size: 16px;
   }
 
-  :deep(.el-table td) {
-    padding: 6px 2px;
-  }
-
-  :deep(.el-button--small) {
-    padding: 4px 6px;
-    font-size: 11px;
-    min-width: 40px;
-  }
-
-  :deep(.el-table .cell) {
-    padding: 0 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  /* Cookie 输入框特殊处理 */
-  .cookie-input {
-    width: calc(100% - 90px) !important;
-    margin-left: 0 !important;
-    font-size: 12px;
-  }
-
-  .cookie-text {
-    font-size: 12px;
-    margin-left: 0;
-  }
-
-  .label-text {
-    font-size: 13px;
-    width: auto;
-    margin-right: 10px;
+  .button-container {
+    flex-direction: column;
+    gap: 5px;
   }
 }
 
@@ -1189,5 +1187,27 @@ export default {
   :deep(.el-table) {
     font-size: 11px;
   }
+}
+
+.product-card-header {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+}
+
+.tracked-count {
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tracked-count i {
+  font-size: 10px;
 }
 </style>

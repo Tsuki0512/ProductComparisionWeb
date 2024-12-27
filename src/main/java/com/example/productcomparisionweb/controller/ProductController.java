@@ -61,7 +61,20 @@ public class ProductController {
             
             // 将数据库中的商品添加到 Map
             for (product p : dbProducts) {
+                System.out.println("\n=== Processing product: " + p.getProductname() + " ===");
                 productMap.put(p.getPid(), p);
+                try {
+                    // 获取并设置关注数
+                    System.out.println("Querying tracked count for product ID: " + p.getPid());
+                    int trackedCount = productMapper.getTrackedCount(p.getPid());
+                    System.out.println("Product ID: " + p.getPid() + ", Tracked count: " + trackedCount);
+                    p.setTrackedCount(trackedCount);
+                } catch (Exception e) {
+                    System.err.println("Error getting tracked count for product " + p.getPid() + ": " + e.getMessage());
+                    e.printStackTrace();
+                    // 设置默认值为0
+                    p.setTrackedCount(0);
+                }
             }
 
             // 2. 从电商平台搜索并更新
@@ -94,6 +107,10 @@ public class ProductController {
                             existingProduct.setCurrent_price(item.getDouble("current_price"));
                             existingProduct.setImage_url(item.getString("image_url"));
                             existingProduct.setSpecification(item.getString("link"));
+                            // 获取并设置关注数
+                            int trackedCount = productMapper.getTrackedCount(existingProduct.getPid());
+                            System.out.println("Existing JD product ID: " + existingProduct.getPid() + ", Tracked count: " + trackedCount);
+                            existingProduct.setTrackedCount(trackedCount);
                             updateProductHistoricalPrices(existingProduct, item.getDouble("current_price"));
                             System.out.println("Updated product historical prices: " + existingProduct.getHistorical_prices());
                             
@@ -113,6 +130,8 @@ public class ProductController {
                             newProduct.setImage_url(item.getString("image_url"));
                             newProduct.setBarcode(barcode);
                             newProduct.setSpecification(item.getString("link"));
+                            newProduct.setTrackedCount(0);
+                            System.out.println("New JD product, setting initial tracked count to 0");
                             updateProductHistoricalPrices(newProduct, item.getDouble("current_price"));
                             
                             productMapper.insertProduct(newProduct);
@@ -145,6 +164,10 @@ public class ProductController {
                         existingProduct.setCurrent_price(Double.parseDouble(item.getString("price")));
                         existingProduct.setImage_url(item.getString("imageURL"));
                         existingProduct.setSpecification(item.getString("link"));
+                        // 获取并设置关注数
+                        int trackedCount = productMapper.getTrackedCount(existingProduct.getPid());
+                        System.out.println("Existing TB product ID: " + existingProduct.getPid() + ", Tracked count: " + trackedCount);
+                        existingProduct.setTrackedCount(trackedCount);
                         updateProductHistoricalPrices(existingProduct, Double.parseDouble(item.getString("price")));
                         productMapper.updateProduct(existingProduct);
                         
@@ -161,6 +184,8 @@ public class ProductController {
                         newProduct.setImage_url(item.getString("imageURL"));
                         newProduct.setBarcode(barcode);
                         newProduct.setSpecification(item.getString("link"));
+                        newProduct.setTrackedCount(0);
+                        System.out.println("New TB product, setting initial tracked count to 0");
                         updateProductHistoricalPrices(newProduct, Double.parseDouble(item.getString("price")));
                         
                         productMapper.insertProduct(newProduct);
@@ -175,6 +200,16 @@ public class ProductController {
             
             // 最后将 Map 中的所有商品转换为列表返回
             allProducts = new ArrayList<>(productMap.values());
+            System.out.println("\n=== Sorting products by tracked count ===");
+            // 按照关注数量排序
+            allProducts.sort((a, b) -> {
+                int countA = a.getTrackedCount() != null ? a.getTrackedCount() : 0;
+                int countB = b.getTrackedCount() != null ? b.getTrackedCount() : 0;
+                System.out.println("Comparing products: " + 
+                    a.getProductname() + " (count: " + countA + ") vs " +
+                    b.getProductname() + " (count: " + countB + ")");
+                return Integer.compare(countB, countA);
+            });
             
             return Result.success(allProducts);
         } catch (Exception e) {

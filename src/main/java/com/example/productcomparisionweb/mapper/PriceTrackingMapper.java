@@ -38,4 +38,10 @@ public interface PriceTrackingMapper {
 
     @Select("SELECT uid FROM price_tracking WHERE pid = #{pid}")
     List<Integer> getUsersByProduct(@Param("pid") Integer pid);
+
+    @Insert("INSERT INTO price_tracking(uid, pid) VALUES(#{uid}, #{pid})")
+    void trackProduct(Integer uid, Integer pid);
+
+    @Delete("DELETE FROM price_tracking WHERE uid = #{uid} AND pid = #{pid}")
+    void untrackProduct(Integer uid, Integer pid);
 } 

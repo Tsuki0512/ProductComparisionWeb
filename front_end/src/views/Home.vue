@@ -47,71 +47,103 @@
       <p class="guide-text">输入你想搜索的商品，选择搜索平台后单击搜索即可！</p>
     </div>
 
+    <!-- 搜索栏下方添加筛选和排序选项 -->
+    <div class="search-results-container" v-if="products.length">
+      <!-- 平台统计信息 -->
+      <div class="platform-stats">
+        <div class="stats-card">
+          <div class="stats-title">京东商品</div>
+          <div class="stats-content">
+            <div class="stats-item">
+              <span class="stats-label">商品数：</span>
+              <span class="stats-value">{{ platformStats.jd.count }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">平均价：</span>
+              <span class="stats-value">¥{{ platformStats.jd.avgPrice.toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="stats-card">
+          <div class="stats-title">淘宝商品</div>
+          <div class="stats-content">
+            <div class="stats-item">
+              <span class="stats-label">商品数：</span>
+              <span class="stats-value">{{ platformStats.tb.count }}</span>
+            </div>
+            <div class="stats-item">
+              <span class="stats-label">平均价：</span>
+              <span class="stats-value">¥{{ platformStats.tb.avgPrice.toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选和排序选项 -->
+      <div class="filter-container">
+        <div class="price-filter">
+          <span class="filter-label">价格区间：</span>
+          <el-input
+            v-model="priceFilter.min"
+            placeholder="最低价"
+            class="price-input"
+            type="number"
+          />
+          <span class="separator">-</span>
+          <el-input
+            v-model="priceFilter.max"
+            placeholder="最高价"
+            class="price-input"
+            type="number"
+          />
+          <el-button size="small" @click="applyPriceFilter">筛选</el-button>
+        </div>
+        <div class="price-sort">
+          <span class="filter-label">价格排序：</span>
+          <el-select v-model="priceSort" @change="applySorting">
+            <el-option label="默认" value="" />
+            <el-option label="价格从低到高" value="asc" />
+            <el-option label="价格从高到低" value="desc" />
+          </el-select>
+        </div>
+      </div>
+    </div>
+
     <!-- 商品表格 -->
-    <div class="products-table" v-else>
-      <el-table 
-        :data="products" 
-        style="width: 100%" 
-        :fit="true"
-        :row-class-name="getRowClassName"
-      >
-        <el-table-column 
-          width="50" 
-          align="center"
-          fixed="left">
-          <template #default="scope">
-            <el-icon 
-              class="star-icon"
-              :class="{ 'is-starred': isProductStarred(scope.row) }"
-              @click.stop="handleToggleStar(scope.row)"
-            >
-              <Star v-if="isProductStarred(scope.row)" style="color: #f0c24b;" />
-              <StarFilled v-else />
-            </el-icon>
-          </template>
-        </el-table-column>
-        <el-table-column 
-          type="index" 
-          label="序号" 
-          width="60" 
-          align="center">
-        </el-table-column>
-        <el-table-column 
-          prop="productname" 
-          label="商品名称" 
-          min-width="200" 
-          align="center">
-        </el-table-column>
-        <el-table-column 
-          label="价格" 
-          min-width="120" 
-          align="center">
-          <template #default="scope">
-            ¥{{ scope.row.current_price.toFixed(2) }}
-          </template>
-        </el-table-column>
-        <el-table-column 
-          prop="platform" 
-          label="平台" 
-          min-width="120" 
-          align="center">
-        </el-table-column>
-        <el-table-column 
-          label="操作" 
-          min-width="100" 
-          align="center"
-          fixed="right">
-          <template #default="scope">
-            <el-button
-              size="small"
-              type="primary"
-              @click="handleDetail(scope.row)"
-            >
-              详细信息
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <div class="products-grid" v-if="filteredProducts.length">
+      <div v-for="product in filteredProducts" 
+           :key="product.pid" 
+           class="product-card"
+           :class="{ 'is-starred': isProductStarred(product) }">
+        <div class="product-card-header">
+          <div class="tracked-count">
+            <i class="fas fa-user"></i>
+            {{ product.trackedCount || 0 }}
+          </div>
+          <el-icon 
+            class="star-icon"
+            :class="{ 'is-starred': isProductStarred(product) }"
+            @click.stop="handleToggleStar(product)"
+          >
+            <Star v-if="isProductStarred(product)" style="color: #f0c24b;" />
+            <StarFilled v-else />
+          </el-icon>
+        </div>
+        <img :src="product.image_url" :alt="product.productname" class="product-image" @click="handleDetail(product)">
+        <div class="product-info">
+          <div class="product-name" @click="handleDetail(product)">{{ product.productname }}</div>
+          <div class="product-price">¥{{ product.current_price.toFixed(2) }}</div>
+          <div class="product-platform">{{ product.platform }}</div>
+          <el-button
+            size="small"
+            type="primary"
+            @click="handleDetail(product)"
+            class="detail-button"
+          >
+            详细信息
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 商品详情弹窗 -->
@@ -144,7 +176,17 @@ export default {
       currentProduct: null,
       selectedPlatform: 'all',
       starredProducts: [],
-      uid: localStorage.getItem('uid')
+      uid: localStorage.getItem('uid'),
+      priceFilter: {
+        min: '',
+        max: ''
+      },
+      priceSort: '',
+      originalProducts: [],  // 保存原始搜索结果
+      platformStats: {
+        jd: { count: 0, avgPrice: 0 },
+        tb: { count: 0, avgPrice: 0 }
+      },
     }
   },
   created() {
@@ -179,9 +221,11 @@ export default {
         
         if (response.data.code === 200) {
           this.products = response.data.data;
+          this.originalProducts = [...response.data.data];
           this.products.forEach(product => {
             product.isTracked = this.isProductStarred(product);
           });
+          this.updatePlatformStats();
         }
       } catch (error) {
         console.error('搜索失败:', error);
@@ -218,33 +262,38 @@ export default {
       return product.isTracked || this.starredProducts.includes(product.pid);
     },
     async handleToggleStar(product) {
-      if (!product) return;
-      if (!this.uid) {
-        this.$message.warning('请先登录');
-        return;
-      }
       try {
-        const isStarred = this.isProductStarred(product);
-        const response = await this.$axios.post('/tracking/toggle', {
-          uid: parseInt(this.uid),
-          pid: product.pid,
-          track: !isStarred
-        });
-        
-        if (response.data.code === 200) {
-          if (!isStarred) {
-            this.starredProducts.push(product.pid);
-            product.isTracked = true;
-            this.$message.success('收藏成功');
-          } else {
+        const uid = localStorage.getItem('uid');
+        if (!uid) {
+          this.$message.warning('请先登录');
+          return;
+        }
+
+        if (this.isProductStarred(product)) {
+          // 取消收藏
+          const response = await this.$axios.delete('/tracking/untrack', {
+            params: { uid, pid: product.pid }
+          });
+          if (response.data.code === 200) {
             this.starredProducts = this.starredProducts.filter(id => id !== product.pid);
-            product.isTracked = false;
+            // 更新商品的关注数
+            product.trackedCount = response.data.data;
             this.$message.success('已取消收藏');
+          }
+        } else {
+          // 添加收藏
+          const response = await this.$axios.post('/tracking/track', null, {
+            params: { uid, pid: product.pid }
+          });
+          if (response.data.code === 200) {
+            this.starredProducts.push(product.pid);
+            // 更新商品的关注数
+            product.trackedCount = response.data.data;
+            this.$message.success('收藏成功');
           }
         }
       } catch (error) {
-        console.error('收藏操作失败:', error);
-        this.$message.error('操作失败，请稍后再试');
+        this.$message.error('操作失败，请稍后重试');
       }
     },
     async loadStarredProducts() {
@@ -292,11 +341,87 @@ export default {
       };
 
       this.chart.setOption(option);
+    },
+    applyPriceFilter() {
+      // 验证输入
+      if (this.priceFilter.min && this.priceFilter.max && 
+          Number(this.priceFilter.min) > Number(this.priceFilter.max)) {
+        this.$message.warning('最低价不能大于最高价');
+        return;
+      }
+      // 筛选会通过 computed 属性自动应用
+    },
+    applySorting() {
+      // 排序会通过 computed 属性自动应用
+    },
+    resetFilters() {
+      this.priceFilter.min = '';
+      this.priceFilter.max = '';
+      this.priceSort = '';
+      this.products = [...this.originalProducts];
+    },
+    updatePlatformStats(products = this.products) {
+      // 重置统计数据
+      this.platformStats = {
+        jd: { count: 0, avgPrice: 0 },
+        tb: { count: 0, avgPrice: 0 }
+      };
+      
+      // 计算每个平台的商品数量和总价
+      const jdProducts = products.filter(p => p.platform === '京东');
+      const tbProducts = products.filter(p => p.platform === '淘宝');
+      
+      // 计算京东统计
+      if (jdProducts.length > 0) {
+        const jdTotal = jdProducts.reduce((sum, p) => sum + p.current_price, 0);
+        this.platformStats.jd = {
+          count: jdProducts.length,
+          avgPrice: jdTotal / jdProducts.length
+        };
+      }
+      
+      // 计算淘宝统计
+      if (tbProducts.length > 0) {
+        const tbTotal = tbProducts.reduce((sum, p) => sum + p.current_price, 0);
+        this.platformStats.tb = {
+          count: tbProducts.length,
+          avgPrice: tbTotal / tbProducts.length
+        };
+      }
     }
   },
   computed: {
     isLoggedIn() {
       return !!this.uid;
+    },
+    filteredProducts() {
+      let result = [...this.products];
+      
+      // 应用价格筛选
+      if (this.priceFilter.min !== '' || this.priceFilter.max !== '') {
+        result = result.filter(product => {
+          const price = product.current_price;
+          const min = this.priceFilter.min === '' ? -Infinity : Number(this.priceFilter.min);
+          const max = this.priceFilter.max === '' ? Infinity : Number(this.priceFilter.max);
+          return price >= min && price <= max;
+        });
+      }
+      
+      // 应用价格排序
+      if (this.priceSort) {
+        result.sort((a, b) => {
+          if (this.priceSort === 'asc') {
+            return a.current_price - b.current_price;
+          } else {
+            return b.current_price - a.current_price;
+          }
+        });
+      }
+      
+      // 更新统计信息
+      this.updatePlatformStats(result);
+      
+      return result;
     }
   },
   watch: {
@@ -501,13 +626,82 @@ export default {
   font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
-.products-table {
-  width: 860px;
-  margin: 20px auto;
-  background-color: white;
-  border-radius: 8px;
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.product-card {
+  background: white;
+  border-radius: 8px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s, box-shadow 0.3s;
+  position: relative;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.product-card.is-starred {
+  border: 2px solid #f0c24b;
+}
+
+.product-card-header {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.product-image {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.product-info {
+  padding: 15px;
+}
+
+.product-name {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 10px;
+  height: 40px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  cursor: pointer;
+}
+
+.product-price {
+  color: #f56c6c;
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.product-platform {
+  color: #909399;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.detail-button {
+  width: 100%;
 }
 
 /* Element Plus 样式覆盖 */
@@ -710,17 +904,223 @@ export default {
     box-sizing: border-box;
   }
 
-  .products-table {
-    width: 100%;
-    margin: 10px 0;
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
     padding: 10px;
-    overflow-x: auto;
   }
 
-  /* 调整表格在移动端的显示 */
-  :deep(.el-table) {
-    width: 100% !important;
+  .product-card {
+    width: 100%;
+  }
+
+  .product-image {
+    height: 150px;
+  }
+
+  .product-name {
     font-size: 12px;
+    height: 32px;
+  }
+
+  .product-price {
+    font-size: 16px;
+  }
+
+  .filter-container {
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .price-filter, .price-sort {
+    width: 100%;
+    justify-content: space-between;
+    gap: 15px;
+  }
+
+  .price-input {
+    width: 80px;
+  }
+
+  .filter-label {
+    min-width: 70px;
+  }
+
+  :deep(.el-select) {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tracked-count {
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tracked-count i {
+  font-size: 10px;
+}
+
+.filter-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin: 20px auto;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+}
+
+.price-filter, .price-sort {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.filter-label {
+  color: #606266;
+  font-size: 14px;
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.price-input {
+  width: 100px;
+}
+
+.separator {
+  color: #909399;
+}
+
+.platform-stats {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.stats-card {
+  flex: 1;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.stats-title {
+  font-size: 14px;
+  color: #3f5bad;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.stats-content {
+  display: flex;
+  justify-content: space-around;
+}
+
+.stats-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.stats-label {
+  color: #606266;
+  font-size: 13px;
+}
+
+.stats-value {
+  color: #f56c6c;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .platform-stats {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .stats-card {
+    width: 100%;
+  }
+
+  .stats-content {
+    justify-content: space-between;
+    padding: 0 10px;
+  }
+}
+
+.search-results-container {
+  max-width: 800px;
+  margin: 20px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.platform-stats {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+}
+
+.filter-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .search-results-container {
+    width: 90%;
+    gap: 10px;
+  }
+
+  .platform-stats {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .filter-container {
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+  }
+}
+
+/* 调整选择框宽度 */
+:deep(.el-select) {
+  width: 200px;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  /* ... 其他移动端样式保持不变 ... */
+
+  :deep(.el-select) {
+    width: 100%;
+    max-width: none;
   }
 }
 </style> 

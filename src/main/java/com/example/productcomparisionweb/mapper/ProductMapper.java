@@ -74,4 +74,7 @@ public interface ProductMapper {
             "VALUES(#{productname}, #{platform}, #{current_price}, #{image_url}, #{barcode}, #{historical_prices}, #{specification})")
     @Options(useGeneratedKeys = true, keyProperty = "pid")
     int insertProduct(product product);
+
+    @Select("SELECT COUNT(*) as tracked_count FROM price_tracking WHERE pid = #{pid}")
+    Integer getTrackedCount(Integer pid);
 }
