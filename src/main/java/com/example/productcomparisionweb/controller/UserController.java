@@ -13,18 +13,18 @@ import java.util.Map;
 import java.util.HashMap;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true")
+@CrossOrigin(origins = "*")
 @RequestMapping("/user")
 public class UserController {
 
     @Autowired
     private UserMapper userMapper;
     @GetMapping("")
-    public List query(){
-
-        List<User> list = userMapper.selectList(null);
-        System.out.println(list);
-        return list;
+    public Result query() {
+        List<User> users = userMapper.selectList(null);
+        Map<String, Object> data = new HashMap<>();
+        data.put("users", users);
+        return Result.success(data);
     }
 
     // 用户注册
@@ -86,7 +86,7 @@ public class UserController {
         // 验证用户是否存在
         User user = userMapper.findByEmail(email);
         if (user == null || !user.getUsername().equals(username)) {
-            return Result.error("用户名或邮箱不正确");
+            return Result.error("用户名或邮箱���正确");
         }
 
         try {
@@ -125,7 +125,7 @@ public class UserController {
         String oldEmail = params.get("oldEmail");
         String newEmail = params.get("newEmail");
 
-        // 检查新邮箱是否��被使用
+        // 检查新邮箱是否被使用
         User existUser = userMapper.findByEmail(newEmail);
         if (existUser != null) {
             return Result.error("该邮箱已被使用");
@@ -151,18 +151,13 @@ public class UserController {
             return Result.error("用户名或密码错误");
         }
         
-        // 打印调试信息
-        System.out.println("Found user: " + res);
-        System.out.println("JD Cookie from DB: " + res.getJd_cookie());
-        System.out.println("TB Cookie from DB: " + res.getTb_cookie());
-        
         Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("uid", res.getUid());
         userInfo.put("username", res.getUsername());
         userInfo.put("email", res.getEmail());
         userInfo.put("jd_cookie", res.getJd_cookie());
         userInfo.put("tb_cookie", res.getTb_cookie());
         
-        System.out.println("Response data: " + userInfo);
         return Result.success(userInfo);
     }
 

@@ -8,11 +8,51 @@ import '@fortawesome/fontawesome-free/css/all.css'
 
 const app = createApp(App)
 
-// 配置axios
-axios.defaults.baseURL = "http://localhost:80"
-// 将axios设置为全局属性
-app.config.globalProperties.$axios = axios
+// 配置 axios
+const axiosInstance = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  timeout: 5000
+})
 
+// 添加请求拦截器
+axiosInstance.interceptors.request.use(
+  config => {
+    console.log('Request details:', {
+      url: config.url,
+      method: config.method,
+      data: config.data,
+      headers: config.headers,
+      baseURL: config.baseURL
+    })
+    return config
+  },
+  error => {
+    console.error('Request Error:', error)
+    return Promise.reject(error)
+  }
+)
+
+// 添加响应拦截器
+axiosInstance.interceptors.response.use(
+  response => {
+    console.log('Response:', response)
+    return response
+  },
+  error => {
+    console.error('Response Error:', {
+      message: error.message,
+      config: error.config,
+      response: error.response
+    })
+    return Promise.reject(error)
+  }
+)
+
+app.config.globalProperties.$axios = axiosInstance
 app.use(ElementPlus)
 app.use(router)
 app.mount('#app')

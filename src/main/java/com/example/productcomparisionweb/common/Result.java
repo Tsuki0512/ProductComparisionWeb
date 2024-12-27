@@ -1,8 +1,5 @@
 package com.example.productcomparisionweb.common;
 
-import lombok.Data;
-
-@Data
 public class Result {
     private Integer code;
     private String msg;
@@ -26,5 +23,30 @@ public class Result {
         result.setCode(500);
         result.setMsg(msg);
         return result;
+    }
+
+    // 手动添加 getter 和 setter 方法
+    public Integer getCode() {
+        return code;
+    }
+
+    public void setCode(Integer code) {
+        this.code = code;
+    }
+
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
+    }
+
+    public Object getData() {
+        return data;
+    }
+
+    public void setData(Object data) {
+        this.data = data;
     }
 } 

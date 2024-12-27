@@ -38,21 +38,42 @@ export default {
   methods: {
     async handleLogin() {
       try {
-        const response = await this.$axios.post('/user/login', {
+        console.log('Attempting login with:', {
           username: this.form.username,
           password: this.form.password
         });
+
+        const response = await this.$axios({
+          method: 'post',
+          url: '/user/login',
+          data: {
+            username: this.form.username,
+            password: this.form.password
+          },
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+
+        console.log('Login response:', response);
         
         if (response.data.code === 200) {
           localStorage.setItem('username', this.form.username);
           const userData = response.data.data;
-          console.log('Login response:', userData);
+          console.log('Login success userData:', userData);
           localStorage.setItem('uid', userData.uid.toString());
           this.$router.push('/home');
         } else {
+          console.error('Login failed:', response.data);
           this.$message.error(response.data.msg || '登录失败');
         }
       } catch (error) {
+        console.error('Login error details:', {
+          message: error.message,
+          config: error.config,
+          response: error.response
+        });
         this.$message.error('登录失败，请稍后再试');
       }
     }
