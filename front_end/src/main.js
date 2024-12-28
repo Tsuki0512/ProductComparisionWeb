@@ -10,7 +10,7 @@ const app = createApp(App)
 
 // 配置 axios
 const axiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: 'http://localhost:80',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'

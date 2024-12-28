@@ -24,8 +24,46 @@ ENV MYSQL_PASSWORD=root
 
 EXPOSE 80
 
-# 安装 mysql-client (使用 apt 而不是 apk)
-RUN apt-get update && apt-get install -y default-mysql-client
+# 安装编译 Python 所需的依赖
+RUN apt-get update && \
+    apt-get install -y \
+    wget \
+    build-essential \
+    zlib1g-dev \
+    libncurses5-dev \
+    libgdbm-dev \
+    libnss3-dev \
+    libssl-dev \
+    libreadline-dev \
+    libffi-dev \
+    libsqlite3-dev \
+    default-mysql-client
+
+# 下载并安装 Python 3.10.6
+RUN cd /tmp && \
+    wget https://www.python.org/ftp/python/3.10.6/Python-3.10.6.tgz && \
+    tar xzf Python-3.10.6.tgz && \
+    cd Python-3.10.6 && \
+    ./configure --enable-optimizations && \
+    make altinstall && \
+    cd .. && \
+    rm -rf Python-3.10.6 Python-3.10.6.tgz && \
+    ln -sf /usr/local/bin/python3.10 /usr/bin/python && \
+    ln -sf /usr/local/bin/pip3.10 /usr/bin/pip
+
+# 创建并激活虚拟环境
+RUN python -m venv /app/venv
+ENV PATH="/app/venv/bin:$PATH"
+
+# 创建 Windows 风格的符号链接以兼容现有代码
+RUN mkdir -p /app/venv/Scripts && \
+    ln -sf /usr/bin/python /app/venv/Scripts/python.exe
+
+# 复制 Python 爬虫代码
+COPY data_source /app/data_source
+
+# 安装 Python 依赖
+RUN pip install --no-cache-dir requests beautifulsoup4 selenium
 
 # 等待 MySQL 就绪的脚本
 COPY wait-for-it.sh /wait-for-it.sh

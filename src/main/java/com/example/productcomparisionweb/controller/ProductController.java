@@ -21,11 +21,13 @@ import java.util.Map;
 import java.util.HashMap;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 @RestController
-@CrossOrigin(origins = "http://localhost:8080", allowCredentials = "true")
+@CrossOrigin(origins = "*")
 @RequestMapping("/product")
 public class ProductController {
-
+    private static final Logger log = LoggerFactory.getLogger(ProductController.class);
     @Autowired
     private ProductMapper productMapper;
 
@@ -45,6 +47,8 @@ public class ProductController {
                         @RequestParam(required = false) String platform,
                         @RequestParam(required = false) Integer uid) {
         try {
+            System.out.println("Starting search with keyword: " + keyword);
+            log.info("Starting search with keyword: " + keyword);
             // 使用 Map 来存储最新的商品信息，key 为 pid
             Map<Integer, product> productMap = new HashMap<>();
             List<product> allProducts = new ArrayList<>();
@@ -80,8 +84,9 @@ public class ProductController {
             // 2. 从电商平台搜索并更新
             if ((platform == null || platform.equals("all") || platform.equals("jd")) && jdCookie != null) {
                 JDSpider jdSpider = new JDSpider(jdCookie);
+                System.out.println("jdSpider created");
                 JSONObject jdResult = jdSpider.requestSearch(keyword, jdCookie, 0, 30);
-                
+                System.out.println("jdResult: " + jdResult);
                 if (jdResult.getInt("code") == 200) {
                     JSONArray jdProducts = jdResult.getJSONArray("data");
                     for (int i = 0; i < jdProducts.length(); i++) {
@@ -148,8 +153,9 @@ public class ProductController {
             // 淘宝搜索逻辑
             if ((platform == null || platform.equals("all") || platform.equals("tb")) && tbCookie != null) {
                 TBSpider tbSpider = new TBSpider(tbCookie);
+                System.out.println("tbSpider created");
                 JSONObject tbResult = tbSpider.requestSearch(keyword, tbCookie, 0, 30);
-                
+                System.out.println("tbResult: " + tbResult);
                 JSONArray tbProducts = tbResult.getJSONArray("results");
                 for (int i = 0; i < tbProducts.length(); i++) {
                     JSONObject item = tbProducts.getJSONObject(i);

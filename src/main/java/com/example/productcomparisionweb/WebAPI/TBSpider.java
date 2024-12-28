@@ -5,6 +5,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Map;
 
 public class TBSpider {
     private final String cookie;
@@ -14,20 +15,26 @@ public class TBSpider {
     }
 
     public JSONObject requestSearch(String keyword, String cookie, int offset, int limit) throws IOException, InterruptedException {
+        String projectRoot = System.getProperty("user.dir");
+        String scriptPath = new File(projectRoot, "data_source/tb_service.py").getAbsolutePath();
+
         ProcessBuilder pb = new ProcessBuilder(
-            "D:\\Anaconda\\python.exe",  // 使用你的 Python 解释器路径
-            "data_source/tb_service.py",
+            "/usr/bin/python",  // 使用系统 Python 路径
+            scriptPath,
             keyword,
             cookie,
             String.valueOf(offset),
             String.valueOf(limit)
         );
         
-        pb.directory(new File(System.getProperty("user.dir")));
+        pb.directory(new File(projectRoot));
         pb.redirectErrorStream(true);
         
         // 设置环境变量以处理编码
-        pb.environment().put("PYTHONIOENCODING", "utf-8");
+        Map<String, String> env = pb.environment();
+        env.put("PYTHONIOENCODING", "utf-8");
+        env.put("PYTHONPATH", projectRoot);
+        env.put("PYTHONUNBUFFERED", "1");
         
         Process process = pb.start();
         BufferedReader reader = new BufferedReader(

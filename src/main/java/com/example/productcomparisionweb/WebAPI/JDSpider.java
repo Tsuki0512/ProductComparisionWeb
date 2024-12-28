@@ -9,8 +9,7 @@ import java.util.Map;
 
 public class JDSpider {
     private final String cookie;
-    private static final String PYTHON_VENV_PATH = "venv/Scripts/python.exe";  // Windows路径
-    // private static final String PYTHON_VENV_PATH = "venv/bin/python";  // Linux/Mac路径
+    private static final String PYTHON_PATH = "/usr/bin/python";  // 使用系统 Python 路径
 
     public JDSpider(String cookie) {
         this.cookie = cookie;
@@ -19,11 +18,10 @@ public class JDSpider {
     public JSONObject requestSearch(String keyword, String cookie, int offset, int limit) throws IOException, InterruptedException {
         // 获取项目根目录
         String projectRoot = System.getProperty("user.dir");
-        String pythonPath = new File(projectRoot, PYTHON_VENV_PATH).getAbsolutePath();
         String scriptPath = new File(projectRoot, "data_source/jd_service.py").getAbsolutePath();
 
         ProcessBuilder pb = new ProcessBuilder(
-            pythonPath,
+            PYTHON_PATH,
             scriptPath,
             keyword,
             cookie,
@@ -36,7 +34,8 @@ public class JDSpider {
         // 设置环境变量
         Map<String, String> env = pb.environment();
         env.put("PYTHONIOENCODING", "utf-8");
-        env.put("PYTHONPATH", new File(projectRoot, "data_source").getAbsolutePath());
+        env.put("PYTHONPATH", projectRoot);
+        env.put("PYTHONUNBUFFERED", "1");
         
         pb.redirectErrorStream(true);
         
@@ -48,7 +47,7 @@ public class JDSpider {
         String line;
         String jsonLine = null;  // 用于存储最后一行（JSON数据）
         
-        // 读取所有输出，但只保留最后一行
+        // 读���所有输出，但只保留最后一行
         while ((line = reader.readLine()) != null) {
             System.out.println("Python output: " + line);
             if (line.trim().startsWith("{")) {  // 只保存 JSON 格式的行

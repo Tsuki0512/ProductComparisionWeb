@@ -11,16 +11,20 @@ import org.json.JSONObject;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping("/user")
 public class UserController {
-
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
     @Autowired
     private UserMapper userMapper;
     @GetMapping("")
     public Result query() {
+        System.out.println("query");
+        log.info("Hello world");
         List<User> users = userMapper.selectList(null);
         Map<String, Object> data = new HashMap<>();
         data.put("users", users);

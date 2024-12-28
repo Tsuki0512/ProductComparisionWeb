@@ -51,16 +51,9 @@ export default {
     }
   },
   created() {
-    this.$axios.get('/user').then(response => {
-      if (response.data && response.data.data && response.data.data.users) {
-        const users = response.data.data.users;
-        if (users.length > 0) {
-          this.user = users[0];
-        }
-      }
-    }).catch(error => {
-      console.error('Error fetching user data:', error);
-    });
+    this.$axios.get('/user').then((response) => {
+      this.userData = response.data;
+    })
   },
   methods: {
     handleLogin() {
@@ -104,7 +97,7 @@ export default {
     },
     async updateTrackedProducts(user) {
       try {
-        // 获取用户收藏的商���
+        // 获取用户收藏的商品
         const trackedResponse = await this.$axios.get(`/tracking/details?uid=${user.uid}`);
         if (trackedResponse.data.code === 200) {
           const trackedProducts = trackedResponse.data.data;
