@@ -1,15 +1,25 @@
+FROM maven:3.9-eclipse-temurin-17 AS build
+
+WORKDIR /build
+COPY pom.xml .
+COPY src ./src
+
+# 编译项目
+RUN mvn clean package -DskipTests
+
+# 第二阶段：运行环境
 FROM openjdk:17-jdk-slim
 
 WORKDIR /app
 
 # 复制项目配置文件
-COPY src/main/resources/application.properties application.properties
+COPY --from=build /build/src/main/resources/application.properties application.properties
 
 # 复制 mapper 文件
-COPY src/main/resources/mapper /app/mapper/
+COPY --from=build /build/src/main/resources/mapper /app/mapper/
 
 # 复制 JAR 包
-COPY target/*.jar app.jar
+COPY --from=build /build/target/*.jar app.jar
 
 # 设置环境变量
 ENV TZ=Asia/Shanghai
@@ -63,7 +73,26 @@ RUN mkdir -p /app/venv/Scripts && \
 COPY data_source /app/data_source
 
 # 安装 Python 依赖
-RUN pip install --no-cache-dir requests beautifulsoup4 selenium
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir \
+    requests==2.31.0 \
+    beautifulsoup4==4.12.2 \
+    bs4==0.0.1 \
+    selenium==4.18.1 \
+    lxml==5.1.0 \
+    urllib3==2.2.1 \
+    fake-useragent==1.4.0 \
+    json5==0.9.14 \
+    chardet==5.2.0
+
+# 设置 Python 环境变量
+ENV PYTHONIOENCODING=utf-8
+ENV PYTHONUNBUFFERED=1
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
+# 验证 Python 环境
+RUN python -c "import bs4; print('BeautifulSoup4 installed successfully')"
 
 # 等待 MySQL 就绪的脚本
 COPY wait-for-it.sh /wait-for-it.sh

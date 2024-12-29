@@ -9,7 +9,7 @@ import java.util.Map;
 
 public class JDSpider {
     private final String cookie;
-    private static final String PYTHON_PATH = "/usr/bin/python";  // 使用系统 Python 路径
+    private static final String PYTHON_PATH = "/app/venv/bin/python";  // 使用虚拟环境中的 Python
 
     public JDSpider(String cookie) {
         this.cookie = cookie;
@@ -47,7 +47,7 @@ public class JDSpider {
         String line;
         String jsonLine = null;  // 用于存储最后一行（JSON数据）
         
-        // 读���所有输出，但只保留最后一行
+        // 读取所有输出，但只保留最后一行
         while ((line = reader.readLine()) != null) {
             System.out.println("Python output: " + line);
             if (line.trim().startsWith("{")) {  // 只保存 JSON 格式的行

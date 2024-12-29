@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS `product` (
   `historical_prices` varchar(2000) DEFAULT NULL,
   UNIQUE KEY `platform_barcode_unique` (`platform`, `barcode`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+INSERT INTO `product` (`productname`, `platform`, `current_price`, `category`, `specification`, `barcode`, `image_url`, `historical_prices`) VALUES
+('vivo S20 8GB+256GB 凤羽金 6500mAh超薄长续航  大电池学生直屏 5000万防畸变柔 光自拍 拍照 AI手机', '京东', 3848.00, 'NULL', 'https://item.jd.com/100157604918.html', '100157604918', 'https://img13.360buyimg.com/n7/jfs/t1/258829/26/3573/93098/676d3ba8Fc9c186d6/bf3dda46f97f505b.jpg', '{"2023-12-24 16:40:09":"3900.00", "2024-6-24 16:40:09":"4128.00", "2024-11-11 13:44:09":"3848.00"}');
 
 -- 价格追踪表
 CREATE TABLE IF NOT EXISTS `price_tracking` (

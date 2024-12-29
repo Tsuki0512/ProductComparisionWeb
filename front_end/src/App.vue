@@ -47,13 +47,23 @@ export default {
       username: '',
       password: '',
       userData: [],
+      user: null,
+      isLoggedIn: false,
       showTable: false
     }
   },
   created() {
-    this.$axios.get('/user').then((response) => {
-      this.userData = response.data;
-    })
+    this.$axios.get('/user').then(response => {
+      if (response.data && response.data.data && response.data.data.users) {
+        const users = response.data.data.users;
+        if (users.length > 0) {
+          this.userData = users;
+          this.user = users[0];
+        }
+      }
+    }).catch(error => {
+      console.error('Error fetching user data:', error);
+    });
   },
   methods: {
     handleLogin() {
@@ -122,6 +132,13 @@ export default {
         console.error('Error updating tracked products:', error);
         // 不影响正常登录，所以这里只记录错误
       }
+    },
+    handleLogout() {
+      this.user = null;
+      this.isLoggedIn = false;
+      localStorage.removeItem('username');
+      localStorage.removeItem('uid');
+      this.$router.push('/');
     }
   }
 }

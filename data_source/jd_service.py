@@ -34,6 +34,17 @@ def jd_request_search(keyword: str, cookie: str, offset: int = 0, limit: int = 3
         end_page = int((offset + limit - 1) / page_size) + 1
         total = 0
 
+        # 处理 cookie
+        # 清理 cookie 中的空白字符和换行符
+        cookie = cookie.strip().replace('\n', '').replace('\r', '')
+        
+        # 将 cookie 字符串转换为字典
+        cookie_dict = {}
+        for item in cookie.split(';'):
+            if '=' in item:
+                name, value = item.strip().split('=', 1)
+                cookie_dict[name.strip()] = value.strip()
+
         # 同步循环获取每一页的数据
         for page in range(start_page, end_page + 1):
             data = jd_fetch_page(keyword, page, cookie)

@@ -19,7 +19,7 @@ public class TBSpider {
         String scriptPath = new File(projectRoot, "data_source/tb_service.py").getAbsolutePath();
 
         ProcessBuilder pb = new ProcessBuilder(
-            "/usr/bin/python",  // 使用系统 Python 路径
+            "/app/venv/bin/python",  // 使用虚拟环境中的 Python
             scriptPath,
             keyword,
             cookie,
